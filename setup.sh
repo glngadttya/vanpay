@@ -6,27 +6,28 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; NC='\033[0m'
 
 NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0)
 if [ "$NODE_MAJOR" -lt 22 ]; then
-  echo -e "${RED}Butuh Node >= 22 (kamu pakai $(node -v)).${NC}"
-  echo "Install dulu: https://nodejs.org (atau curl -fsSL https://deb.nodesource.com/setup_22.x | bash -)"
+  echo -e "${RED}Diperlukan Node >= 22 (saat ini $(node -v)).${NC}"
+  echo "Instal terlebih dahulu: https://nodejs.org (atau curl -fsSL https://deb.nodesource.com/setup_22.x | bash -)"
   exit 1
 fi
 echo -e "${GREEN}Node $(node -v) OK${NC}"
 
-if [ ! -f package.json ]; then echo "Jalankan dari folder project."; exit 1; fi
+if [ ! -f package.json ]; then echo "Jalankan dari folder utama project."; exit 1; fi
 
-echo "Install dependencies..."
+echo "Memasang dependencies..."
 npm install --no-audit --no-fund
 
 if [ ! -f .env ]; then
   cp .env.example .env
-  echo -e "${GREEN}.env dibuat dari contoh. Isi sekarang.${NC}"
+  echo -e "${GREEN}.env dibuat dari contoh. Nilai dapat diubah nanti melalui Dashboard > Pengaturan.${NC}"
 else
   echo ".env sudah ada - dilewati."
 fi
 
 echo ""
 echo "=== Langkah berikutnya ==="
-echo "1) Isi .env: QRIS_STRING (string QRIS statis GoBiz lu), GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET, OWNER_EMAIL, PUBLIC_URL"
-echo "2) Login GoBiz:   node login.js   (pilih mode otp, isi nomor + kode OTP)"
-echo "3) Jalankan:      npm start"
-echo "4) Buka:          http://localhost:3000"
+echo "1) Jalankan:      npm start"
+echo "2) Buka:          http://localhost:3000"
+echo "3) Owner:         Buka /bootstrap/<token> yang tercetak pada log saat boot pertama."
+echo "4) Setup lengkap: Dashboard > Pengaturan (QRIS, GoBiz, Telegram, OAuth web)."
+echo "   Atau gunakan .env sebagai nilai awal/fallback sebelum start."

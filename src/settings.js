@@ -73,7 +73,7 @@ async function ensureBootstrap() {
   const owner = await hasOwner();
   if (!owner) {
     logger.warn('===== OWNER SETUP =====');
-    logger.warn('Belum ada owner. Buka link ini SEKALI biar akun lu jadi OWNER:');
+    logger.warn('Owner belum terdaftar. Buka tautan berikut sekali untuk menjadikan akun Anda OWNER:');
     logger.warn('GET  /bootstrap/' + raw);
     logger.warn('Setelah itu kelola semuanya di dashboard -> PENGATURAN.');
     logger.warn('=======================');

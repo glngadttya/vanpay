@@ -58,21 +58,21 @@ const config = {
 function checkConfig() {
   const out = [];
   if (!config.qrisString) {
-    out.push({ msg: 'QRIS_STRING belum diset (env). Bisa diatur runtime di /admin > Pengaturan.' });
+    out.push({ msg: 'QRIS_STRING belum diset (env). Dapat diatur runtime di Dashboard > Pengaturan.' });
   } else if (n(process.env.QRIS_CRC_OK, 1) !== 0) {
     try { require('../lib/qris').qrToPayload(config.qrisString); } catch (e) { out.push({ msg: 'QRIS_STRING (env) tidak valid: ' + e.message }); }
   }
   if (!config.github.clientId || !config.github.clientSecret) {
-    out.push({ msg: 'GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET belum diisi — login GitHub nonaktif (atur di /admin).' });
+    out.push({ msg: 'GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET belum diisi — login GitHub nonaktif (atur di Dashboard > Pengaturan).' });
   }
   if (!config.google.clientId || !config.google.clientSecret) {
-    out.push({ msg: 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET belum diisi — login Google nonaktif (atur di /admin).' });
+    out.push({ msg: 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET belum diisi — login Google nonaktif (atur di Dashboard > Pengaturan).' });
   }
   if (!config.telegram.botToken || !config.telegram.chatId) {
-    out.push({ msg: 'TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID belum diisi — notif Telegram nonaktif (atur di /admin).' });
+    out.push({ msg: 'TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID belum diisi — notif Telegram nonaktif (atur di Dashboard > Pengaturan).' });
   }
   if (!config.goPay.phone && !config.goPay.accessToken) {
-    out.push({ msg: 'Kredensial GoBiz belum di-set — polling pembayaran nonaktif sampai login GoBiz (di /admin > Pengaturan).' });
+    out.push({ msg: 'Kredensial GoBiz belum di-set — polling pembayaran nonaktif sampai login GoBiz (di Dashboard > Pengaturan).' });
   }
   return out;
 }

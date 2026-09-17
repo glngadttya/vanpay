@@ -26,7 +26,7 @@ async function main() {
   }
 
   if (mode === 'r') {
-    if (!prev.refreshToken) { logger.error('ga ada refresh_token.'); rl.close(); return; }
+    if (!prev.refreshToken) { logger.error('Refresh token tidak tersedia.'); rl.close(); return; }
     const tok = await gobiz.refresh(prev.refreshToken);
     const merchantId = tok.merchantId || prev.merchantId || await gobiz.detectMerchantId(tok.accessToken);
     await saveAuth(db, { ...tok, merchantId, phone: prev.phone });

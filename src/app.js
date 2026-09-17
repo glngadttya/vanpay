@@ -121,7 +121,7 @@ function buildApp(db) {
 
   app.get('/auth/github', withAsync(async (req, res) => {
     const cid = config.github.clientId || settings.get('oauth.github_client_id', '');
-    if (!cid) return res.status(503).send('GitHub login belum dikonfigurasi. Login owner dulu via /bootstrap, lalu atur di Pengaturan.');
+    if (!cid) return res.status(503).send('GitHub login belum dikonfigurasi. Masuk sebagai owner terlebih dahulu melalui /bootstrap, lalu atur di Pengaturan.');
     const state = randToken(16);
     res.setHeader('Set-Cookie', `vp_state=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`);
     res.redirect(github.authorizeUrl(state, originOf(req) + '/auth/github/callback'));
@@ -138,7 +138,7 @@ function buildApp(db) {
 
   app.get('/auth/google', withAsync(async (req, res) => {
     const cid = config.google.clientId || settings.get('oauth.google_client_id', '');
-    if (!cid) return res.status(503).send('Google login belum dikonfigurasi. Login owner dulu via /bootstrap, lalu atur di Pengaturan.');
+    if (!cid) return res.status(503).send('Google login belum dikonfigurasi. Masuk sebagai owner terlebih dahulu melalui /bootstrap, lalu atur di Pengaturan.');
     const state = randToken(16);
     res.setHeader('Set-Cookie', `vp_state=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`);
     res.redirect(google.authorizeUrl(state, originOf(req) + '/auth/google/callback'));
@@ -377,7 +377,7 @@ function buildApp(db) {
 
   app.post('/api/admin/gobiz/refresh', requireOwner, gob(async (req, res) => {
     const cur = await gstate.getAuth(db);
-    if (!cur.refreshToken) return res.status(400).json({ ok: false, error: 'Ga ada refresh_token. Login ulang dulu.' });
+    if (!cur.refreshToken) return res.status(400).json({ ok: false, error: 'Refresh token tidak ditemukan. Silakan login ulang.' });
     const tok = await gobiz.refresh(cur.refreshToken);
     await gstate.saveAuth(db, { ...tok, merchantId: tok.merchantId || cur.merchantId, phone: cur.phone, name: cur.name });
     ok(res, { ok: true, linked: true });

@@ -55,7 +55,7 @@ async function runCycle(db) {
 
     const auth = await getAuth(dbRef);
     if (!auth.accessToken || !auth.merchantId) {
-      logger.debug('[poller] belum ada kredensial GoBiz (login dari /admin > Pengaturan)');
+      logger.debug('[poller] belum ada kredensial GoBiz (login dari Dashboard > Pengaturan)');
       await settings.set('sys.lastPollMsg', 'Belum login GoBiz');
       return;
     }

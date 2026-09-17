@@ -48,10 +48,11 @@
   function buildNav() {
     const nav = $('#nav');
     if (!state.me) return;
+    const I = 'fa-solid fa-';
     const items = state.me.role === 'owner'
-      ? [['o-overview', '◉ Ringkasan'], ['o-users', '👥 Pengguna'], ['o-payments', '▦ Pembayaran'], ['o-withdrawals', '↳ Penarikan'], ['o-setup', '⚙ Pengaturan']]
-      : [['overview', '◉ Ringkasan'], ['pay', '▦ Buat QRIS'], ['payments', '◷ Riwayat QRIS'], ['withdraw', '↳ Tarik Dana'], ['ledger', '◪ Mutasi']];
-    nav.innerHTML = items.map(([id, label]) => `<button data-page="${id}">${label}</button>`).join('');
+      ? [['o-overview', `${I}chart-simple`, 'Ringkasan'], ['o-users', `${I}users`, 'Pengguna'], ['o-payments', `${I}money-bill-transfer`, 'Pembayaran'], ['o-withdrawals', `${I}hand-holding-dollar`, 'Penarikan'], ['o-setup', `${I}gear`, 'Pengaturan']]
+      : [['overview', `${I}chart-simple`, 'Ringkasan'], ['pay', `${I}qrcode`, 'Buat QRIS'], ['payments', `${I}clock-rotate-left`, 'Riwayat QRIS'], ['withdraw', `${I}hand-holding-dollar`, 'Tarik Dana'], ['ledger', `${I}list-ul`, 'Mutasi Saldo']];
+    nav.innerHTML = items.map(([id, icon, label]) => `<button data-page="${id}"><i class="${icon}"></i><span>${label}</span></button>`).join('');
     nav.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { setPage(b.dataset.page); load(b.dataset.page); }));
   }
 
@@ -62,9 +63,9 @@
       $('#pg-overview').innerHTML = `
         <h2>Ringkasan ${esc(state.me.name || '')}</h2>
         <div class="grid g4">
-          <div class="card"><div class="k">Saldo</div><div class="v">${rupiah(st.balance)}</div><div class="hov">Bisa ditarik kapan pun</div></div>
-          <div class="card"><div class="k">Total deposit</div><div class="v">${rupiah(st.totalDeposit)}</div><div class="hov">${st.countPaid} transaksi sukses</div></div>
-          <div class="card"><div class="k">Total tarik</div><div class="v">${rupiah(st.totalWithdraw)}</div><div class="hov">${st.pendingWithdraw ? 'Menunggu proses: ' + rupiah(st.pendingWithdraw) : 'Ga ada penarikan pending'}</div></div>
+          <div class="card"><div class="k">Saldo</div><div class="v">${rupiah(st.balance)}</div><div class="hov">Dapat ditarik kapan saja</div></div>
+          <div class="card"><div class="k">Total deposit</div><div class="v">${rupiah(st.totalDeposit)}</div><div class="hov">${st.countPaid} transaksi berhasil</div></div>
+          <div class="card"><div class="k">Total tarik</div><div class="v">${rupiah(st.totalWithdraw)}</div><div class="hov">${st.pendingWithdraw ? 'Menunggu proses: ' + rupiah(st.pendingWithdraw) : 'Tidak ada penarikan yang menunggu'}</div></div>
           <div class="card"><div class="k">QRIS aktif</div><div class="v">${st.pendingPayments}</div><div class="hov">Belum dibayar</div></div>
         </div>
         <div class="grid g2" style="margin-top:16px">
@@ -84,12 +85,12 @@
         <div class="grid g2">
           <div class="card">
             <form id="frmPay">
-              <div class="row"><label>Nominal (Rp)</label><input type="number" id="inAmt" min="1000" step="1000" placeholder="cth. 5000" required></div>
-              <div class="row"><label>Catatan (opsional)</label><input type="text" id="inNote" maxlength="80" placeholder="cth. invoice #123"></div>
-              <button class="btn grad" type="submit" id="btnPay">Buat QRIS →</button>
+              <div class="row"><label>Nominal (Rp)</label><input type="number" id="inAmt" min="1000" step="1000" placeholder="contoh: 5.000" required></div>
+              <div class="row"><label>Catatan (opsional)</label><input type="text" id="inNote" maxlength="80" placeholder="contoh: invoice #123"></div>
+              <button class="btn grad" type="submit" id="btnPay"><i class="fa-solid fa-qrcode"></i>&nbsp;Buat QRIS</button>
               <div class="msg" id="msgPay"></div>
             </form>
-            <p style="font-size:12.5px;color:var(--muted);margin-top:12px">Pembeli bayar = nominal + fee + kode unik. Saldo yang masuk = nominal penuh.</p>
+            <p style="font-size:12.5px;color:var(--muted);margin-top:12px">Total yang dibayar pembeli = nominal + fee + kode unik. Saldo yang masuk ke akun Anda sebesar nominal penuh.</p>
           </div>
           <div id="payResult" style="display:none"></div>
         </div>`;
@@ -104,12 +105,12 @@
             body: JSON.stringify({ amount: $('#inAmt').value, note: $('#inNote').value }),
           });
           showPayResult(txn);
-          showMsg('msgPay', 'ok', 'QRIS dibuat! Minta pembeli scan dibawah.');
+          showMsg('msgPay', 'ok', 'QRIS berhasil dibuat. Silakan minta pembeli memindai kode di samping.');
         } catch (err) {
           showMsg('msgPay', 'err', err.message);
         } finally {
           btn.disabled = false;
-          btn.textContent = 'Buat QRIS →';
+          btn.textContent = '<i class="fa-solid fa-qrcode"></i>&nbsp;Buat QRIS';
         }
       });
       if (auto) {
@@ -193,7 +194,7 @@
             method: 'POST',
             body: JSON.stringify({ amount: $('#wdAmt').value, method: $('#wdMethod').value, accountNumber: $('#wdAcct').value, accountName: $('#wdName').value }),
           });
-          showMsg('msgWd', 'ok', 'Penarikan diajukan! Admin akan proses max 1–24 jam.');
+          showMsg('msgWd', 'ok', 'Penarikan berhasil diajukan. Admin akan memproses dalam maksimal 1–24 jam.');
           load('withdraw');
         } catch (err) {
           showMsg('msgWd', 'err', err.message);
@@ -311,8 +312,8 @@
                   <td>${esc(w.method)}</td>
                   <td>${esc(w.account_name || '')} <span class="hov">${esc(w.account_number || '')}</span></td>
                   <td>
-                    <button class="btn green" style="padding:6px 12px;font-size:12px" data-ok="${w.id}">✓ Sudah transfer</button>
-                    <button class="btn danger" style="padding:6px 12px;font-size:12px" data-no="${w.id}">✗ Tolak</button>
+                    <button class="btn green" style="padding:6px 12px;font-size:12px" data-ok="${w.id}"><i class="fa-solid fa-check"></i>&nbsp;Tandai selesai</button>
+                    <button class="btn danger" style="padding:6px 12px;font-size:12px" data-no="${w.id}"><i class="fa-solid fa-xmark"></i>&nbsp;Tolak</button>
                   </td>
                 </tr>`).join('') : `<tr><td colspan="6" class="empty">Tidak ada penarikan menunggu</td></tr>`}
               </tbody>
@@ -342,10 +343,10 @@
         const id = b.dataset.ok || b.dataset.no;
         const ok = !!b.dataset.ok;
         if (!confirm((ok ? 'Tandai penarikan ' : 'Tolak penarikan ') + id + (ok ? ' sebagai SUDAH ditransfer?' : '? Saldo akan di-refund.'))) return;
-        const note = ok ? '' : (prompt('Alasan tolak (opsional):') || '');
+        const note = ok ? '' : (prompt('Alasan penolakan (opsional):') || '');
         try {
           await api('/api/admin/withdrawals/' + id + (ok ? '/approve' : '/reject'), { method: 'POST', body: JSON.stringify({ note }) });
-          alert(ok ? 'Penarikan ditandai selesai.' : 'Penarikan ditolak & saldo direfund.');
+          alert(ok ? 'Penarikan ditandai selesai.' : 'Penarikan ditolak dan saldo direfund.');
           load('o-withdrawals');
         } catch (err) {
           alert('Gagal: ' + err.message);
@@ -379,7 +380,7 @@
               </select>
             </label>
             <label><span>String QRIS statis merchant</span>
-              <textarea name="qr.qris_string" rows="4" placeholder="Tempel string 000201010211266... hasil scan BUKAN kode QR statis kamu">${esc(s.qr.qris_string)}</textarea>
+              <textarea name="qr.qris_string" rows="4" placeholder="Tempel string 000201010211266... hasil scan, bukan kode QR statis Anda">${esc(s.qr.qris_string)}</textarea>
             </label>
             <p class="hint">Scan QR statis GoBiz/GoPay dengan aplikasi scan apa pun → salin isinya (mulai 000201…). QRIS ini dipakai sebagai induk semua pembayaran. Mode dinamis menyisipkan nominal & kode unik otomatis; mode statis menampilkan QR induk + nominal.</p>
             <button class="btn primary" type="submit">Simpan QRIS</button>
@@ -411,7 +412,7 @@
             <div class="k">Notifikasi Telegram</div>
             <label><span>Bot token</span><input name="tg.bot_token" type="password" value="${esc(s.tg.bot_token)}" autocomplete="new-password"></label>
             <label><span>Chat ID</span><input name="tg.chat_id" value="${esc(s.tg.chat_id)}"></label>
-            <p class="hint">Bikin bot via @BotFather, obrolan pesan ke bot sekali, lalu panggil getUpdates untuk ambil chat_id.</p>
+            <p class="hint">Buat bot melalui @BotFather, kirim satu pesan ke bot tersebut, lalu panggil getUpdates untuk mengambil chat_id.</p>
             <div class="rowlr">
               <button class="btn" type="button" id="tgTest">Kirim pesan uji</button>
               <button class="btn primary" type="submit">Simpan Telegram</button>
@@ -475,7 +476,7 @@
           if (!r) return;
           try {
             const t = await api('/api/admin/telegram/test', { method: 'POST' });
-            alert(t.sent ? 'Pesan uji terkirim ✅ cek Telegram kamu.' : 'Gagal kirim: ' + (t.error || '?'));
+            alert(t.sent ? 'Pesan uji terkirim. Silakan periksa Telegram Anda.' : 'Gagal kirim: ' + (t.error || '?'));
           } catch (err) { alert('Gagal: ' + err.message); }
         });
       }
@@ -484,17 +485,17 @@
         bt('gobizOtp').addEventListener('click', async () => {
           const phone = bt('gobizCard').elements['gobiz.phone'].value.trim();
           const cc = bt('gobizCard').elements['gobiz.cc'].value;
-          if (!phone) return alert('Isi nomor dulu.');
+          if (!phone) return alert('Isi nomor telepon terlebih dahulu.');
           try {
             await api('/api/admin/gobiz/otp', { method: 'POST', body: JSON.stringify({ phone, cc }) });
-            alert('OTP terkirim ke ' + cc + phone + '. Masukkan kodenya lalu klik Verifikasi.');
+            alert('Kode OTP terkirim ke ' + cc + phone + '. Masukkan kode lalu klik Verifikasi.');
           } catch (err) { alert('Gagal: ' + err.message); }
         });
         bt('gobizVerify').addEventListener('click', async () => {
           const phone = bt('gobizCard').elements['gobiz.phone'].value.trim();
           const cc = bt('gobizCard').elements['gobiz.cc'].value;
           const otp = bt('gobizCard').elements['gobiz.otp'].value.trim();
-          if (!otp) return alert('Isi kode OTP.');
+          if (!otp) return alert('Masukkan kode OTP.');
           try {
             const r = await api('/api/admin/gobiz/verify', { method: 'POST', body: JSON.stringify({ phone, cc, otp }) });
             alert('GoBiz terhubung' + (r.merchantId ? ' (merchant ' + r.merchantId + ')' : '') + '. Polling otomatis aktif.');
@@ -504,7 +505,7 @@
         bt('gobizPw').addEventListener('click', async () => {
           const email = bt('gobizCard').elements['gobiz.email'].value.trim();
           const password = bt('gobizCard').elements['gobiz.password'].value;
-          if (!email || !password) return alert('Isi email & password.');
+          if (!email || !password) return alert('Isi email dan password.');
           try {
             const r = await api('/api/admin/gobiz/password', { method: 'POST', body: JSON.stringify({ email, password }) });
             alert('GoBiz terhubung' + (r.merchantId ? ' (merchant ' + r.merchantId + ')' : '') + '. Polling otomatis aktif.');
@@ -518,8 +519,8 @@
           catch (err) { alert('Gagal: ' + err.message); }
         });
         bt('gobizLogout').addEventListener('click', async () => {
-          if (!confirm('Logout GoBiz? Polling pembayaran akan berhenti.')) return;
-          try { await api('/api/admin/gobiz/logout', { method: 'POST' }); alert('Logout OK.'); load('o-setup'); }
+          if (!confirm('Keluar dari GoBiz? Polling pembayaran akan berhenti.')) return;
+          try { await api('/api/admin/gobiz/logout', { method: 'POST' }); alert('Berhasil keluar.'); load('o-setup'); }
           catch (err) { alert('Gagal: ' + err.message); }
         });
       }
@@ -534,7 +535,7 @@
         <div><img src="/api/qris/${esc(txn.id)}/qr.png" alt="QRIS" id="qrImg"></div>
         <div class="pay-info">
           <div class="amount">${rupiah(txn.payAmount)}</div>
-          <div class="to">scan &amp; bayar pake aplikasi pembayaran QRIS apa aja</div>
+          <div class="to"><i class="fa-solid fa-qrcode"></i>&nbsp;Pindai &amp; bayar menggunakan aplikasi pembayaran QRIS apa pun</div>
           <div class="rowm"><span>Nominal</span><b>${rupiah(txn.amount)}</b></div>
           <div class="rowm"><span>Fee</span><b>${rupiah(txn.fee)}</b></div>
           <div class="rowm"><span>Kode unik</span><b>+${txn.uniqueCode}</b></div>
@@ -550,7 +551,7 @@
         if (el) el.innerHTML = badges(st.status);
         if (st.status === 'PAID') {
           clearInterval(state.pollTimer);
-          el.innerHTML = badges('PAID') + ' <span class="badge done">Saldo masuk!</span>';
+          el.innerHTML = badges('PAID') + ' <span class="badge done">Saldo telah masuk</span>';
           setTimeout(() => { load('overview'); setPage('overview'); }, 2500);
         } else if (st.status === 'EXPIRED') {
           clearInterval(state.pollTimer);
