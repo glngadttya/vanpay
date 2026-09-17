@@ -3,24 +3,23 @@ require('dotenv').config();
 
 const { config, checkConfig } = require('./src/config');
 const { getDb } = require('./src/db');
+const settings = require('./src/settings');
 const { startPoller, stopPoller } = require('./src/services/poller');
 const logger = require('./lib/logger');
 
 async function main() {
-  const problems = checkConfig();
-  for (const p of problems) {
-    if (p.fatal) throw new Error('Config fatal: ' + p.msg);
-    logger.warn(p.msg);
-  }
+  for (const p of checkConfig()) logger.warn(p.msg);
 
   const db = getDb();
+  await settings.load(db);
+  await settings.ensureBootstrap();
+
   const app = require('./src/app').buildApp(db);
 
   const port = config.port;
   const server = app.listen(port, () => {
     logger.info(`[VanPay] listening on :${port}`);
-    const pub = config.publicUrl || `http://localhost:${port}`;
-    logger.info(`[VanPay] open  ${pub}`);
+    logger.info(`[VanPay] buka  http://localhost:${port}`);
   });
 
   server.on('error', (e) => {

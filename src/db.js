@@ -242,6 +242,9 @@ function buildSqliteHandle(db) {
       db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(key, String(value));
     },
     delete: (key) => { db.prepare(`DELETE FROM settings WHERE key = ?`).run(key); },
+    listAll() {
+      return db.prepare(`SELECT * FROM settings`).all();
+    },
   };
 
   const groups = { users, sessions, payments, ledger, withdrawals, settings };

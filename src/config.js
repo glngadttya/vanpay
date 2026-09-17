@@ -9,7 +9,6 @@ const raw = (k, d = '') => {
 
 const config = {
   port: n(process.env.PORT, 3000),
-  publicUrl: raw('PUBLIC_URL', '').replace(/\/+$/, ''),
 
   dbFile: raw('DB_FILE', 'data/vanpay.db'),
   databaseUrl: raw('DATABASE_URL', ''),
@@ -59,26 +58,21 @@ const config = {
 function checkConfig() {
   const out = [];
   if (!config.qrisString) {
-    out.push({ fatal: true, msg: 'QRIS_STRING wajib diisi (QRIS statis GoBiz merchant lu).' });
-  } else {
-    if (n(process.env.QRIS_CRC_OK, 1) !== 0) {
-      try { require('../lib/qris').qrToPayload(config.qrisString); } catch (e) { out.push({ fatal: true, msg: 'QRIS_STRING tidak valid: ' + e.message }); }
-    }
+    out.push({ msg: 'QRIS_STRING belum diset (env). Bisa diatur runtime di /admin > Pengaturan.' });
+  } else if (n(process.env.QRIS_CRC_OK, 1) !== 0) {
+    try { require('../lib/qris').qrToPayload(config.qrisString); } catch (e) { out.push({ msg: 'QRIS_STRING (env) tidak valid: ' + e.message }); }
   }
   if (!config.github.clientId || !config.github.clientSecret) {
-    out.push({ msg: 'GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET belum diisi — login GitHub nonaktif.' });
+    out.push({ msg: 'GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET belum diisi — login GitHub nonaktif (atur di /admin).' });
   }
   if (!config.google.clientId || !config.google.clientSecret) {
-    out.push({ msg: 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET belum diisi — login Google nonaktif.' });
+    out.push({ msg: 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET belum diisi — login Google nonaktif (atur di /admin).' });
   }
   if (!config.telegram.botToken || !config.telegram.chatId) {
-    out.push({ msg: 'TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID belum diisi — notif Telegram nonaktif.' });
+    out.push({ msg: 'TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID belum diisi — notif Telegram nonaktif (atur di /admin).' });
   }
   if (!config.goPay.phone && !config.goPay.accessToken) {
-    out.push({ msg: 'Kredensial GoBiz belum diisi — polling pembayaran nonaktif sampai login GoBiz.' });
-  }
-  if (config.webhookSecret === 'change-me') {
-    out.push({ fatal: true, msg: 'WEBHOOK_SECRET default tidak boleh dipakai di production.' });
+    out.push({ msg: 'Kredensial GoBiz belum di-set — polling pembayaran nonaktif sampai login GoBiz (di /admin > Pengaturan).' });
   }
   return out;
 }

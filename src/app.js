@@ -3,15 +3,19 @@ const express = require('express');
 const QRCode = require('qrcode');
 
 const { config } = require('./config');
+const settings = require('./settings');
 const logger = require('../lib/logger');
 const { randToken, makeRl, securityHeaders, safeEqual, clientIp } = require('../lib/security');
 const github = require('../lib/auth/github');
 const google = require('../lib/auth/google');
+const qris = require('../lib/qris');
+const gobiz = require('../lib/gobiz');
+const tg = require('../lib/telegram');
 const paymentsSvc = require('./services/payments');
 const withdrawals = require('./services/withdrawals');
 const statsSvc = require('./services/stats');
 const poller = require('./services/poller');
-const { hasAuth } = require('./services/gobiz-state');
+const gstate = require('./services/gobiz-state');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
@@ -34,9 +38,10 @@ function buildApp(db) {
     next();
   });
 
-  const isSecure = /^https/.test(config.publicUrl);
-  const setSession = (res, token) => {
-    res.setHeader('Set-Cookie', `vanpay=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${config.sessionTtlDays * 86400}${isSecure ? '; Secure' : ''}`);
+  const isSecure = (req) => req.protocol === 'https' || String(req.get('x-forwarded-proto') || '').includes('https');
+  const originOf = (req) => `${req.protocol}://${req.get('host')}`;
+  const setSession = (req, res, token) => {
+    res.setHeader('Set-Cookie', `vanpay=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${config.sessionTtlDays * 86400}${isSecure(req) ? '; Secure' : ''}`);
   };
   const clearSession = (res) => {
     res.setHeader('Set-Cookie', 'vanpay=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
@@ -64,51 +69,100 @@ function buildApp(db) {
     next();
   }
 
+  function ownerEmail() {
+    return settings.get('oauth.owner_email', '') || config.ownerEmail;
+  }
+
   const rlQris = makeRl((req) => (req.user ? 'u' + req.user.id : clientIp(req)), { windowMs: 60000, max: 12 });
   const rlWd = makeRl((req) => (req.user ? 'w' + req.user.id : clientIp(req)), { windowMs: 60000, max: 8 });
+  const rlBootstrap = makeRl(() => 'bootstrap', { windowMs: 60000, max: 10 });
+  const rlOtp = makeRl((req) => (req.user ? 'g' + req.user.id : clientIp(req)), { windowMs: 60000, max: 6 });
 
   const ok = (res, data) => res.json({ ok: true, data });
   const withAsync = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+  const gob = (fn) => withAsync(async (req, res, next) => {
+    try {
+      await fn(req, res, next);
+    } catch (e) {
+      if (e && e.expose) throw e;
+      const err = new Error('GoBiz tidak bisa dihubungi: ' + (e && e.message));
+      err.status = 502;
+      err.expose = true;
+      throw err;
+    }
+  });
+
+  // ---------------- bootstrap owner ----------------
+
+  app.get('/bootstrap/:token', rlBootstrap, withAsync(async (req, res) => {
+    const valid = settings.checkBootstrap(req.params.token);
+    if (!valid) {
+      const owner = await settings.hasOwner();
+      return res.status(owner ? 404 : 400).send(owner ? 'Owner sudah ada.' : 'Token tidak valid.');
+    }
+    const origin = originOf(req);
+    let user = await db.users.getByProvider('bootstrap', 'owner');
+    if (!user) {
+      user = await db.users.findOrCreate({
+        provider: 'bootstrap', providerId: 'owner', email: 'owner@' + req.get('host'), name: 'VanPay Owner', avatar: '',
+      });
+      user = await db.users.getByEmail('owner@' + req.get('host'));
+    }
+    await db.users.promoteOwner(user.email);
+    user = await db.users.getByEmail(user.email);
+    const token = await db.sessions.create(user.id, config.sessionTtlDays);
+    setSession(req, res, token);
+    logger.info(`[auth] owner bootstrap: ${user.email}`);
+    logger.info(`[auth] semua pengaturan ada di /dashboard -> PENGATURAN (origin ${origin})`);
+    res.redirect('/dashboard?setup=1');
+  }));
 
   // ---------------- auth oauth ----------------
 
-  app.get('/auth/github', withAsync(async (_req, res) => {
-    if (!config.github.clientId) return res.status(503).send('GitHub login belum dikonfigurasi');
+  app.get('/auth/github', withAsync(async (req, res) => {
+    const cid = config.github.clientId || settings.get('oauth.github_client_id', '');
+    if (!cid) return res.status(503).send('GitHub login belum dikonfigurasi. Login owner dulu via /bootstrap, lalu atur di Pengaturan.');
     const state = randToken(16);
     res.setHeader('Set-Cookie', `vp_state=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`);
-    res.redirect(github.authorizeUrl(state));
+    res.redirect(github.authorizeUrl(state, originOf(req) + '/auth/github/callback'));
   }));
 
   app.get('/auth/github/callback', withAsync(async (req, res) => {
     if (req.cookies.vp_state && req.query.state && req.cookies.vp_state !== req.query.state) return res.status(400).send('State tidak cocok');
-    const token = await github.exchange(String(req.query.code || ''));
+    const code = String(req.query.code || '');
+    if (!code) return res.status(400).send('Tidak ada kode OAuth');
+    const token = await github.exchange(code, originOf(req) + '/auth/github/callback');
     const info = await github.userInfo(token);
-    await finishLogin(db, res, info);
+    await finishLogin(req, res, info);
   }));
 
-  app.get('/auth/google', withAsync(async (_req, res) => {
-    if (!config.google.clientId) return res.status(503).send('Google login belum dikonfigurasi');
+  app.get('/auth/google', withAsync(async (req, res) => {
+    const cid = config.google.clientId || settings.get('oauth.google_client_id', '');
+    if (!cid) return res.status(503).send('Google login belum dikonfigurasi. Login owner dulu via /bootstrap, lalu atur di Pengaturan.');
     const state = randToken(16);
     res.setHeader('Set-Cookie', `vp_state=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`);
-    res.redirect(google.authorizeUrl(state));
+    res.redirect(google.authorizeUrl(state, originOf(req) + '/auth/google/callback'));
   }));
 
   app.get('/auth/google/callback', withAsync(async (req, res) => {
     if (req.cookies.vp_state && req.query.state && req.cookies.vp_state !== req.query.state) return res.status(400).send('State tidak cocok');
-    const token = await google.exchange(String(req.query.code || ''));
+    const code = String(req.query.code || '');
+    if (!code) return res.status(400).send('Tidak ada kode OAuth');
+    const token = await google.exchange(code, originOf(req) + '/auth/google/callback');
     const info = await google.userInfo(token);
-    await finishLogin(db, res, info);
+    await finishLogin(req, res, info);
   }));
 
-  async function finishLogin(db, res, info) {
+  async function finishLogin(req, res, info) {
     let user = await db.users.findOrCreate(info);
     if (!user) return res.status(500).send('Gagal membuat akun');
-    if (config.ownerEmail && String(user.email).toLowerCase() === String(config.ownerEmail).toLowerCase() && user.role !== 'owner') {
+    const ownerMail = ownerEmail();
+    if (ownerMail && String(user.email).toLowerCase() === String(ownerMail).toLowerCase() && user.role !== 'owner') {
       await db.users.promoteOwner(user.email);
       user = await db.users.get(user.id);
     }
     const token = await db.sessions.create(user.id, config.sessionTtlDays);
-    setSession(res, token);
+    setSession(req, res, token);
     logger.info(`[auth] login ${user.email} role=${user.role}`);
     res.redirect('/dashboard');
   }
@@ -125,6 +179,7 @@ function buildApp(db) {
   app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
   app.get('/login', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.html')));
   app.get('/dashboard', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'dashboard.html')));
+  app.get('/admin', (_req, res) => res.redirect('/dashboard'));
 
   app.get('/auth/me', withAsync(async (req, res) => {
     await loadUser(req);
@@ -174,7 +229,6 @@ function buildApp(db) {
       note: txn.note,
       qrUrl: `/api/qris/${txn.id}/qr.png`,
       statusUrl: `/api/qris/${txn.id}/status`,
-      paymentLink: `${config.publicUrl}/pay/${txn.id}`,
     });
   }));
 
@@ -195,14 +249,6 @@ function buildApp(db) {
     ok(res, { status: st.status, paidAt: txn.paid_at || null });
   }));
 
-  app.get('/pay/:id', withAsync(async (req, res) => {
-    const txn = await db.payments.get(req.params.id);
-    await loadUser(req);
-    if (!req.user) return res.redirect('/login');
-    if (req.user.id !== txn.user_id && req.user.role !== 'owner') return res.status(403).send('Bukan punya lo');
-    res.redirect('/dashboard?pay=' + txn.id);
-  }));
-
   app.post('/api/withdraw', requireAuth, rlWd, withAsync(async (req, res) => {
     const wd = await withdrawals.requestWithdraw(db, req.user, {
       amount: req.body.amount,
@@ -216,19 +262,140 @@ function buildApp(db) {
   // ---------------- owner api ----------------
 
   app.get('/api/admin/stats', requireOwner, withAsync(async (req, res) => ok(res, await statsSvc.ownerStats(db))));
+
   app.get('/api/admin/status', requireOwner, withAsync(async (req, res) => {
     ok(res, {
-      gobizLinked: await hasAuth(db),
-      qrisConfigured: !!config.qrisString,
-      telegram: !!(config.telegram.botToken && config.telegram.chatId),
+      gobizLinked: await gstate.hasAuth(db),
+      gobiz: await gstate.getAuth(db),
+      qrisConfigured: !!(settings.get('qr.qris_string', '') || config.qrisString),
+      owners: (await db.users.list()).filter((u) => u.role === 'owner').length,
     });
+  }));
+
+  app.get('/api/admin/settings', requireOwner, withAsync(async (req, res) => {
+    const gobAuth = await gstate.getAuth(db);
+    ok(res, {
+      qr: { qris_string: settings.get('qr.qris_string', ''), mode: settings.get('qr.mode', 'dynamic') },
+      billing: {
+        fee_pct: settings.getNum('billing.fee_pct', config.feePct),
+        min_fee: settings.getNum('billing.min_fee', config.minFee),
+        min_qris: settings.getNum('billing.min_qris', config.minQrisAmount),
+        max_qris: settings.getNum('billing.max_qris', config.maxQrisAmount),
+        min_wd: settings.getNum('billing.min_wd', config.minWithdraw),
+        max_wd: settings.getNum('billing.max_wd', config.maxWithdraw),
+      },
+      oauth: {
+        github_client_id: config.github.clientId || settings.get('oauth.github_client_id', ''),
+        google_client_id: config.google.clientId || settings.get('oauth.google_client_id', ''),
+        owner_email: ownerEmail(),
+      },
+      tg: {
+        bot_token: settings.get('tg.bot_token', '') || config.telegram.botToken,
+        chat_id: settings.get('tg.chat_id', '') || config.telegram.chatId,
+      },
+      gobiz: {
+        linked: !!(gobAuth.accessToken && gobAuth.merchantId),
+        merchantId: gobAuth.merchantId || '',
+        merchantName: gobAuth.name || '',
+        phone: gobAuth.phone || '',
+        hasRefreshToken: !!gobAuth.refreshToken,
+      },
+      sys: {
+        lastPollAt: settings.get('sys.lastPollAt', '') ,
+        lastPollMsg: settings.get('sys.lastPollMsg', 'Belum pernah polling'),
+        lastPollCount: settings.get('sys.lastPollCount', '0'),
+        bootstrapActive: process.env.SKIP_BOOTSTRAP ? false : true,
+      },
+      envGobiz: !!(config.goPay.phone || config.goPay.accessToken),
+    });
+  }));
+
+  const SETTABLE = new Set([
+    'qr.qris_string', 'qr.mode',
+    'billing.fee_pct', 'billing.min_fee', 'billing.min_qris', 'billing.max_qris', 'billing.min_wd', 'billing.max_wd',
+    'oauth.github_client_id', 'oauth.github_client_secret', 'oauth.google_client_id', 'oauth.google_client_secret', 'oauth.owner_email',
+    'tg.bot_token', 'tg.chat_id',
+  ]);
+
+  app.post('/api/admin/settings', requireOwner, withAsync(async (req, res) => {
+    const entries = req.body && (req.body.entries || req.body);
+    if (!entries || typeof entries !== 'object') return res.status(400).json({ ok: false, error: 'entries wajib objek' });
+    const saved = [];
+    for (const [key, value] of Object.entries(entries)) {
+      if (!SETTABLE.has(key)) continue;
+      if (key === 'qr.qris_string') {
+        const v = String(value || '').trim();
+        if (v) {
+          try { qris.qrToPayload(v); } catch (e) { return res.status(400).json({ ok: false, error: 'QRIS tidak valid: ' + e.message }); }
+        }
+        await settings.set(key, v);
+        saved.push(key);
+        continue;
+      }
+      await settings.set(key, value);
+      saved.push(key);
+    }
+    logger.info('[admin] settings disimpan: ' + saved.join(', '));
+    ok(res, { saved });
+  }));
+
+  app.post('/api/admin/gobiz/otp', requireOwner, rlOtp, gob(async (req, res) => {
+    const phone = String(req.body.phone || '').trim();
+    const cc = String(req.body.cc || '+62').trim();
+    if (!phone) return res.status(400).json({ ok: false, error: 'Nomor wajib diisi' });
+    await gobiz.requestOtp(phone, cc);
+    await db.settings.set('gobiz.otpPhone', cc + phone);
+    ok(res, { sent: true, to: cc + phone });
+  }));
+
+  app.post('/api/admin/gobiz/verify', requireOwner, rlOtp, gob(async (req, res) => {
+    let phone = String(req.body.phone || '').trim();
+    const cc = String(req.body.cc || '+62').trim();
+    if (!phone) phone = String(await db.settings.get('gobiz.otpPhone', '')).replace(cc, '');
+    const otp = String(req.body.otp || '').trim().replace(/\s+/g, '');
+    if (!phone || !otp) return res.status(400).json({ ok: false, error: 'Nomor & OTP wajib' });
+    const tok = await gobiz.verifyOtp(phone, cc, otp);
+    let merchantId = tok.merchantId;
+    if (!merchantId) merchantId = await gobiz.detectMerchantId(tok.accessToken);
+    await gstate.saveAuth(db, { ...tok, merchantId, phone });
+    logger.info(`[admin] GoBiz OTP login OK merchant=${merchantId || '?'}`);
+    ok(res, { linked: !!merchantId, merchantId: merchantId || '', name: tok.raw && (tok.raw.merchant && tok.raw.merchant.name) || '' });
+    db.settings.delete('gobiz.otpPhone').catch(() => {});
+  }));
+
+  app.post('/api/admin/gobiz/password', requireOwner, rlOtp, gob(async (req, res) => {
+    const email = String(req.body.email || '').trim();
+    const password = String(req.body.password || '');
+    if (!email || !password) return res.status(400).json({ ok: false, error: 'Email & password wajib' });
+    const tok = await gobiz.loginWithPassword(email, password);
+    let merchantId = tok.merchantId;
+    if (!merchantId) merchantId = await gobiz.detectMerchantId(tok.accessToken);
+    await gstate.saveAuth(db, { ...tok, merchantId, phone: tok.raw && tok.raw.phone || '' });
+    logger.info(`[admin] GoBiz password login OK merchant=${merchantId || '?'}`);
+    ok(res, { linked: !!merchantId, merchantId: merchantId || '', name: tok.raw && (tok.raw.merchant && tok.raw.merchant.name) || '' });
+  }));
+
+  app.post('/api/admin/gobiz/refresh', requireOwner, gob(async (req, res) => {
+    const cur = await gstate.getAuth(db);
+    if (!cur.refreshToken) return res.status(400).json({ ok: false, error: 'Ga ada refresh_token. Login ulang dulu.' });
+    const tok = await gobiz.refresh(cur.refreshToken);
+    await gstate.saveAuth(db, { ...tok, merchantId: tok.merchantId || cur.merchantId, phone: cur.phone, name: cur.name });
+    ok(res, { ok: true, linked: true });
+  }));
+
+  app.post('/api/admin/gobiz/logout', requireOwner, gob(async (req, res) => {
+    await gstate.clearAuth(db);
+    ok(res, { ok: true });
+  }));
+
+  app.post('/api/admin/telegram/test', requireOwner, withAsync(async (req, res) => {
+    ok(res, await tg.testSend());
   }));
 
   app.get('/api/admin/users', requireOwner, withAsync(async (req, res) => {
     const users = await db.users.list();
     const out = [];
     for (const u of users) {
-      const pays = await db.payments.countByStatus('PAID');
       const wds = await db.withdrawals.listByUser(u.id, 500);
       const psum = (await db.payments.listByUser(u.id, 500)).filter((p) => p.status === 'PAID').reduce((a, p) => a + Number(p.amount || 0), 0);
       out.push({
@@ -257,8 +424,6 @@ function buildApp(db) {
   app.post('/api/admin/withdrawals/:id/reject', requireOwner, withAsync(async (req, res) => {
     ok(res, await withdrawals.reject(db, req.params.id, req.body && req.body.note));
   }));
-
-  app.post('/api/admin/withdrawals/:id/done', requireOwner, withAsync(async (req, res) => ok(res, await withdrawals.approve(db, req.params.id))));
 
   // ---------------- cron ----------------
 

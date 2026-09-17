@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { config } = require('../config');
+const settings = require('../settings');
 const qris = require('../../lib/qris');
 const telegram = require('../../lib/telegram');
 const logger = require('../../lib/logger');
@@ -17,15 +18,25 @@ function newId(prefix) {
 }
 
 async function calcFee(amount) {
-  return Math.max(config.minFee, Math.round(amount * (config.feePct / 100)));
+  const pct = settings.getNum('billing.fee_pct', config.feePct);
+  const min = settings.getNum('billing.min_fee', config.minFee);
+  return Math.max(min, Math.round(amount * (pct / 100)));
+}
+
+function effectiveQris() {
+  return settings.get('qr.qris_string', '') || config.qrisString;
 }
 
 async function createPayment(db, user, { amount, note }) {
   amount = Math.round(Number(amount));
   if (!Number.isFinite(amount) || amount <= 0) throw new AppError(400, 'Nominal tidak valid');
-  if (amount < config.minQrisAmount) throw new AppError(400, `Minimal QRIS ${config.minQrisAmount}`);
-  if (amount > config.maxQrisAmount) throw new AppError(400, `Maksimal QRIS ${config.maxQrisAmount}`);
-  if (!config.qrisString) throw new AppError(503, 'QRIS utama belum dikonfigurasi pemilik');
+  const minAmt = settings.getNum('billing.min_qris', config.minQrisAmount);
+  const maxAmt = settings.getNum('billing.max_qris', config.maxQrisAmount);
+  if (amount < minAmt) throw new AppError(400, `Minimal QRIS ${minAmt}`);
+  if (amount > maxAmt) throw new AppError(400, `Maksimal QRIS ${maxAmt}`);
+
+  const qrString0 = effectiveQris();
+  if (!qrString0) throw new AppError(503, 'QRIS utama belum dikonfigurasi owner');
 
   const fee = await calcFee(amount);
   const pending = await db.payments.listPending();
@@ -40,13 +51,19 @@ async function createPayment(db, user, { amount, note }) {
 
   const id = newId('PN');
   const expiresAt = new Date(Date.now() + config.expireMinutes * 60000).toISOString();
-  const qrString = qris.buildDynamicQris(config.qrisString, payAmount);
+  const mode = settings.get('qr.mode', 'dynamic');
+  let qrString;
+  try {
+    qrString = mode === 'static' ? qris.qrToPayload(qrString0) : qris.buildDynamicQris(qrString0, payAmount);
+  } catch (e) {
+    throw new AppError(400, 'QRIS utama tidak valid: ' + e.message);
+  }
 
   const txn = await db.payments.create({
     id, userId: user.id, amount, fee, uniqueCode: code, payAmount, qrString,
     expiresAt, note: String(note || '').slice(0, 80) || null,
   });
-  logger.info(`[payments] buat ${id}: amount=${amount} fee=${fee} pay=${payAmount} code=${code} user#${user.id}`);
+  logger.info(`[payments] buat ${id}: amount=${amount} fee=${fee} pay=${payAmount} code=${code} mode=${mode} user#${user.id}`);
   return txn;
 }
 

@@ -1,6 +1,7 @@
 const logger = require('../../lib/logger');
 const gobiz = require('../../lib/gobiz');
 const { config } = require('../config');
+const settings = require('../settings');
 const { onIncoming } = require('./payments');
 const { getAuth, saveAuth, clearAuth } = require('./gobiz-state');
 
@@ -48,18 +49,21 @@ async function runCycle(db) {
   if (!dbRef) return;
   if (running) return;
   running = true;
+  const started = Date.now();
   try {
     await dbRef.payments.expireDue();
 
     const auth = await getAuth(dbRef);
     if (!auth.accessToken || !auth.merchantId) {
-      logger.debug('[poller] belum ada kredensial GoBiz (login via node login.js)');
+      logger.debug('[poller] belum ada kredensial GoBiz (login dari /admin > Pengaturan)');
+      await settings.set('sys.lastPollMsg', 'Belum login GoBiz');
       return;
     }
 
     const gotten = await fetchEntries(auth);
     if (gotten.error) {
       logger.warn('[poller] ' + (gotten.kind || '') + ': ' + (gotten.error && gotten.error.message));
+      await settings.set('sys.lastPollMsg', 'Gagal: ' + (gotten.error && gotten.error.message));
       if (gotten.kind === 'norefresh') await clearAuth(dbRef);
       return;
     }
@@ -72,9 +76,13 @@ async function runCycle(db) {
       const after = await dbRef.payments.countByStatus('PAID');
       if (after.c > before.c) count += 1;
     }
+    await settings.set('sys.lastPollAt', new Date(started).toISOString());
+    await settings.set('sys.lastPollCount', String(count));
+    await settings.set('sys.lastPollMsg', count ? `Siklus OK, ${count} deposit diproses` : 'Siklus OK');
     if (count) logger.info(`[poller] siklus selesai, ${count} deposit baru diproses`);
   } catch (e) {
     logger.warn('[poller] error: ' + (e && e.message));
+    await settings.set('sys.lastPollMsg', 'Error: ' + (e && e.message)).catch(() => {});
   } finally {
     running = false;
     lastRunAt = Date.now();

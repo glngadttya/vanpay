@@ -39,7 +39,7 @@
 
   function setPage(id) {
     document.querySelectorAll('.page').forEach((p) => p.classList.remove('on'));
-    const pg = document.getElementById(id);
+    const pg = document.getElementById(id) || document.getElementById('pg-' + id);
     if (pg) pg.classList.add('on');
     document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.page === id));
     window.scrollTo(0, 0);
@@ -49,7 +49,7 @@
     const nav = $('#nav');
     if (!state.me) return;
     const items = state.me.role === 'owner'
-      ? [['o-overview', '◉ Ringkasan'], ['o-users', '👥 Pengguna'], ['o-payments', '▦ Pembayaran'], ['o-withdrawals', '↳ Penarikan']]
+      ? [['o-overview', '◉ Ringkasan'], ['o-users', '👥 Pengguna'], ['o-payments', '▦ Pembayaran'], ['o-withdrawals', '↳ Penarikan'], ['o-setup', '⚙ Pengaturan']]
       : [['overview', '◉ Ringkasan'], ['pay', '▦ Buat QRIS'], ['payments', '◷ Riwayat QRIS'], ['withdraw', '↳ Tarik Dana'], ['ledger', '◪ Mutasi']];
     nav.innerHTML = items.map(([id, label]) => `<button data-page="${id}">${label}</button>`).join('');
     nav.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { setPage(b.dataset.page); load(b.dataset.page); }));
@@ -352,6 +352,178 @@
         }
       }));
     },
+
+    async 'o-setup'() {
+      const s = await api('/api/admin/settings');
+      const origin = location.origin;
+      $('#pg-o-setup').innerHTML = `
+        <h2>Pengaturan</h2>
+        <div class="cwrap">
+          <div class="card">
+            <div class="k">Status layanan</div>
+            <div class="rowm"><span>QRIS utama</span><b>${s.qr.qris_string ? '<span class="badge done">OK</span>' : '<span class="badge">BELUM DISET</span>'}</b></div>
+            <div class="rowm"><span>Mode QR</span><b>${esc(s.qr.mode)}</b></div>
+            <div class="rowm"><span>GoBiz (scanner pembayaran)</span><b>${s.gobiz.linked ? '<span class="badge done">Terhubung</span>' : '<span class="badge">BELUM LOGIN</span>'}</b></div>
+            <div class="rowm"><span>Merchant</span><b>${esc(s.gobiz.merchantName || s.gobiz.merchantId || '-')}</b></div>
+            <div class="rowm"><span>Telegram</span><b>${s.tg.bot_token ? '<span class="badge done">Terpasang</span>' : '<span class="badge">Nonaktif</span>'}</b></div>
+            <div class="rowm"><span>Login web</span><b>${s.oauth.github_client_id || s.oauth.google_client_id ? '<span class="badge done">Aktif</span>' : '<span class="badge">Hanya melalui /bootstrap</span>'}</b></div>
+            <div class="rowm"><span>Polling terakhir</span><b>${esc(s.sys.lastPollMsg || '-')} ${s.sys.lastPollAt ? '(' + fmt(new Date(s.sys.lastPollAt)) + ')' : ''}</b></div>
+          </div>
+
+          <form class="card" id="fQris">
+            <div class="k">QRIS utama &amp; mode</div>
+            <label class="rowlr"><span>Mode QR</span>
+              <select name="qr.mode">
+                <option value="dynamic">Dinamis (nominal otomatis + kode unik)</option>
+                <option value="static">Statis (QR tetap + nominal besar)</option>
+              </select>
+            </label>
+            <label><span>String QRIS statis merchant</span>
+              <textarea name="qr.qris_string" rows="4" placeholder="Tempel string 000201010211266... hasil scan BUKAN kode QR statis kamu">${esc(s.qr.qris_string)}</textarea>
+            </label>
+            <p class="hint">Scan QR statis GoBiz/GoPay dengan aplikasi scan apa pun → salin isinya (mulai 000201…). QRIS ini dipakai sebagai induk semua pembayaran. Mode dinamis menyisipkan nominal & kode unik otomatis; mode statis menampilkan QR induk + nominal.</p>
+            <button class="btn primary" type="submit">Simpan QRIS</button>
+          </form>
+
+          <form class="card" id="fBilling">
+            <div class="k">Biaya &amp; limit</div>
+            <label><span>Fee deposit (%)</span><input name="billing.fee_pct" type="number" step="0.1" min="0" value="${s.billing.fee_pct}"></label>
+            <label><span>Fee minimum (Rp)</span><input name="billing.min_fee" type="number" min="0" value="${s.billing.min_fee}"></label>
+            <label><span>Min nominal QRIS</span><input name="billing.min_qris" type="number" min="0" value="${s.billing.min_qris}"></label>
+            <label><span>Max nominal QRIS</span><input name="billing.max_qris" type="number" min="0" value="${s.billing.max_qris}"></label>
+            <label><span>Min penarikan</span><input name="billing.min_wd" type="number" min="0" value="${s.billing.min_wd}"></label>
+            <label><span>Max penarikan</span><input name="billing.max_wd" type="number" min="0" value="${s.billing.max_wd}"></label>
+            <button class="btn primary" type="submit">Simpan Biaya</button>
+          </form>
+
+          <form class="card" id="fOauth">
+            <div class="k">Login web (Google/GitHub)</div>
+            <label><span>GitHub Client ID</span><input name="oauth.github_client_id" value="${esc(s.oauth.github_client_id)}"></label>
+            <label><span>GitHub Client Secret</span><input name="oauth.github_client_secret" type="password" placeholder="Kosongkan jika tidak diubah" autocomplete="new-password"></label>
+            <label><span>Google Client ID</span><input name="oauth.google_client_id" value="${esc(s.oauth.google_client_id)}"></label>
+            <label><span>Google Client Secret</span><input name="oauth.google_client_secret" type="password" placeholder="Kosongkan jika tidak diubah" autocomplete="new-password"></label>
+            <label><span>Email owner (auto-owner saat login)</span><input name="oauth.owner_email" value="${esc(s.oauth.owner_email)}"></label>
+            <p class="hint">Callback GitHub: <b>${esc(origin)}/auth/github/callback</b><br>Callback Google: <b>${esc(origin)}/auth/google/callback</b></p>
+            <button class="btn primary" type="submit">Simpan OAuth</button>
+          </form>
+
+          <form class="card" id="fTg">
+            <div class="k">Notifikasi Telegram</div>
+            <label><span>Bot token</span><input name="tg.bot_token" type="password" value="${esc(s.tg.bot_token)}" autocomplete="new-password"></label>
+            <label><span>Chat ID</span><input name="tg.chat_id" value="${esc(s.tg.chat_id)}"></label>
+            <p class="hint">Bikin bot via @BotFather, obrolan pesan ke bot sekali, lalu panggil getUpdates untuk ambil chat_id.</p>
+            <div class="rowlr">
+              <button class="btn" type="button" id="tgTest">Kirim pesan uji</button>
+              <button class="btn primary" type="submit">Simpan Telegram</button>
+            </div>
+          </form>
+
+          <div class="card" id="gobizCard">
+            <div class="k">Login GoBiz (scanner pembayaran otomatis)</div>
+            ${s.gobiz.linked ? `
+              <div class="rowm"><span>Merchant</span><b>${esc(s.gobiz.merchantName || s.gobiz.merchantId || '-')}</b></div>
+              <div class="rowm"><span>Nomor</span><b>${esc(s.gobiz.phone || '-')}</b></div>
+              <div class="rowm"><span>Refresh token</span><b>${s.gobiz.hasRefreshToken ? '<span class="badge done">ada</span>' : '<span class="badge">tidak</span>'}</b></div>
+              <div class="rowlr">
+                <button class="btn" type="button" id="gobizRefresh">Perbarui token</button>
+                <button class="btn danger" type="button" id="gobizLogout">Logout GoBiz</button>
+              </div>` : `
+              <label><span>Nomor (cara OTP)</span>
+                <div class="rowlr"><input name="gobiz.phone" placeholder="81234567890" style="flex:1"><select name="gobiz.cc" style="width:110px"><option value="+62">+62</option><option value="+60">+60</option><option value="+65">+65</option></select></div>
+              </label>
+              <div class="rowlr">
+                <button class="btn" type="button" id="gobizOtp">Kirim OTP</button>
+                <input name="gobiz.otp" placeholder="Kode OTP" style="flex:1">
+                <button class="btn primary" type="button" id="gobizVerify">Verifikasi &amp; simpan</button>
+              </div>
+              <div class="sep">atau</div>
+              <label><span>Email GoBiz</span><input name="gobiz.email" placeholder="email@merchant.id"></label>
+              <label><span>Password</span><input name="gobiz.password" type="password" placeholder="••••••••"></label>
+              <button class="btn primary" type="button" id="gobizPw">Login password</button>
+              <p class="hint">Login minim 1x supaya polling pembayaran jalan. Token disimpan aman; kapan pun bisa refresh/logout dari sini.</p>`}
+          </div>
+        </div>`;
+
+      const cards = [['fQris', ['qr.qris_string', 'qr.mode']], ['fBilling', ['billing.fee_pct', 'billing.min_fee', 'billing.min_qris', 'billing.max_qris', 'billing.min_wd', 'billing.max_wd']], ['fOauth', ['oauth.github_client_id', 'oauth.github_client_secret', 'oauth.google_client_id', 'oauth.google_client_secret', 'oauth.owner_email']], ['fTg', ['tg.bot_token', 'tg.chat_id']]];
+      cards.forEach(([id, keys]) => {
+        const f = document.getElementById(id);
+        if (!f) return;
+        f.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const entries = {};
+          keys.forEach((k) => {
+            const inp = f.elements[k];
+            if (!inp) return;
+            const v = inp.value.trim();
+            if ((k.includes('secret') || k === 'tg.bot_token') && v === '') return;
+            entries[k] = k.startsWith('oauth') && k.includes('secret') ? v : (k.startsWith('qq') || k.startsWith('qr') || k.startsWith('oauth') || k.startsWith('tg') ? v : (isNaN(Number(v)) ? v : Number(v)));
+          });
+          try {
+            const r = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ entries }) });
+            alert('Tersimpan (' + r.saved.length + ' setelan).');
+            load('o-setup');
+          } catch (err) {
+            alert('Gagal simpan: ' + err.message);
+          }
+        });
+      });
+
+      const bt = (id) => document.getElementById(id);
+      if (bt('tgTest')) {
+        bt('tgTest').addEventListener('click', async () => {
+          const r = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ entries: { 'tg.bot_token': bt('fTg').elements['tg.bot_token'].value.trim(), 'tg.chat_id': bt('fTg').elements['tg.chat_id'].value.trim() } }) }).catch((err) => alert('Gagal: ' + err.message));
+          if (!r) return;
+          try {
+            const t = await api('/api/admin/telegram/test', { method: 'POST' });
+            alert(t.sent ? 'Pesan uji terkirim ✅ cek Telegram kamu.' : 'Gagal kirim: ' + (t.error || '?'));
+          } catch (err) { alert('Gagal: ' + err.message); }
+        });
+      }
+
+      if (bt('gobizOtp')) {
+        bt('gobizOtp').addEventListener('click', async () => {
+          const phone = bt('gobizCard').elements['gobiz.phone'].value.trim();
+          const cc = bt('gobizCard').elements['gobiz.cc'].value;
+          if (!phone) return alert('Isi nomor dulu.');
+          try {
+            await api('/api/admin/gobiz/otp', { method: 'POST', body: JSON.stringify({ phone, cc }) });
+            alert('OTP terkirim ke ' + cc + phone + '. Masukkan kodenya lalu klik Verifikasi.');
+          } catch (err) { alert('Gagal: ' + err.message); }
+        });
+        bt('gobizVerify').addEventListener('click', async () => {
+          const phone = bt('gobizCard').elements['gobiz.phone'].value.trim();
+          const cc = bt('gobizCard').elements['gobiz.cc'].value;
+          const otp = bt('gobizCard').elements['gobiz.otp'].value.trim();
+          if (!otp) return alert('Isi kode OTP.');
+          try {
+            const r = await api('/api/admin/gobiz/verify', { method: 'POST', body: JSON.stringify({ phone, cc, otp }) });
+            alert('GoBiz terhubung' + (r.merchantId ? ' (merchant ' + r.merchantId + ')' : '') + '. Polling otomatis aktif.');
+            load('o-setup');
+          } catch (err) { alert('Gagal: ' + err.message); }
+        });
+        bt('gobizPw').addEventListener('click', async () => {
+          const email = bt('gobizCard').elements['gobiz.email'].value.trim();
+          const password = bt('gobizCard').elements['gobiz.password'].value;
+          if (!email || !password) return alert('Isi email & password.');
+          try {
+            const r = await api('/api/admin/gobiz/password', { method: 'POST', body: JSON.stringify({ email, password }) });
+            alert('GoBiz terhubung' + (r.merchantId ? ' (merchant ' + r.merchantId + ')' : '') + '. Polling otomatis aktif.');
+            load('o-setup');
+          } catch (err) { alert('Gagal: ' + err.message); }
+        });
+      }
+      if (bt('gobizRefresh')) {
+        bt('gobizRefresh').addEventListener('click', async () => {
+          try { await api('/api/admin/gobiz/refresh', { method: 'POST' }); alert('Token diperbarui.'); load('o-setup'); }
+          catch (err) { alert('Gagal: ' + err.message); }
+        });
+        bt('gobizLogout').addEventListener('click', async () => {
+          if (!confirm('Logout GoBiz? Polling pembayaran akan berhenti.')) return;
+          try { await api('/api/admin/gobiz/logout', { method: 'POST' }); alert('Logout OK.'); load('o-setup'); }
+          catch (err) { alert('Gagal: ' + err.message); }
+        });
+      }
+    },
   };
 
   function showPayResult(txn) {
@@ -413,10 +585,16 @@
     $('#pAv').src = me.avatar || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40"%3E%3Crect fill="%23cbd5e1" width="40" height="40"/%3E%3C/svg%3E';
     $('#pBadge').innerHTML = me.role === 'owner' ? badges('owner').replace('owner', 'owner') + ' owner' : 'member';
     buildNav();
+    const qp = new URLSearchParams(location.search);
+    if (me.role === 'owner' && qp.get('setup')) {
+      setPage('o-setup');
+      load('o-setup');
+      return;
+    }
     const target = me.role === 'owner' ? 'o-overview' : 'overview';
     setPage(target);
     load(target);
-    if (new URLSearchParams(location.search).get('pay')) {
+    if (qp.get('pay')) {
       setPage('pay');
       load('pay');
     }

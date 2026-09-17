@@ -285,6 +285,10 @@ function buildHandle() {
       delete: async (key) => {
         await pool.query(`DELETE FROM settings WHERE key = $1`, [key]);
       },
+      listAll: async () => {
+        const r = await pool.query(`SELECT * FROM settings`);
+        return r.rows;
+      },
     },
   };
 }

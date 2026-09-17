@@ -1,4 +1,5 @@
 const { config } = require('../config');
+const settings = require('../settings');
 const telegram = require('../../lib/telegram');
 const logger = require('../../lib/logger');
 const { newId, AppError } = require('./payments');
@@ -9,8 +10,10 @@ const ALLOWED = new Set(METHODS);
 async function requestWithdraw(db, user, { amount, method, accountNumber, accountName }) {
   amount = Math.round(Number(amount));
   if (!Number.isFinite(amount) || amount <= 0) throw new AppError(400, 'Nominal tidak valid');
-  if (amount < config.minWithdraw) throw new AppError(400, `Minimal penarikan ${config.minWithdraw}`);
-  if (amount > config.maxWithdraw) throw new AppError(400, `Maksimal penarikan ${config.maxWithdraw}`);
+  const minWd = settings.getNum('billing.min_wd', config.minWithdraw);
+  const maxWd = settings.getNum('billing.max_wd', config.maxWithdraw);
+  if (amount < minWd) throw new AppError(400, `Minimal penarikan ${minWd}`);
+  if (amount > maxWd) throw new AppError(400, `Maksimal penarikan ${maxWd}`);
   if (!ALLOWED.has(String(method).toUpperCase())) throw new AppError(400, 'Metode harus DANA / GOPAY / SHOPEEPAY');
   if (!accountNumber || !String(accountNumber).trim()) throw new AppError(400, 'Nomor rekening wajib diisi');
 
