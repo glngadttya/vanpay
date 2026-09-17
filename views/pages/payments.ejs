@@ -1,0 +1,25 @@
+<h2>Riwayat QRIS</h2>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Nominal</th><th>Fee</th><th>Total QR</th><th>Status</th><th>Waktu</th><th></th></tr></thead>
+      <tbody>
+        <% if (list.length) { %>
+          <% list.forEach((p) => { %>
+            <tr>
+              <td><b><%= esc(p.id) %></b></td>
+              <td><%= rupiah(p.amount) %></td>
+              <td><%= rupiah(p.fee) %></td>
+              <td><%= rupiah(p.payAmount) %> <span class="hov">(+<%= p.uniqueCode %>)</span></td>
+              <td><%- badge(p.status) %></td>
+              <td><%= fmt(p.createdAt) %></td>
+              <td><a class="btn ghost" style="padding:6px 10px;font-size:12px" href="/dashboard/pay?ref=<%= encodeURIComponent(p.id) %>">Lihat QR</a></td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="7" class="empty">Belum ada QRIS yang dibuat</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

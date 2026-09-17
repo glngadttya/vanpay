@@ -1,0 +1,93 @@
+<h2>Pengaturan</h2>
+<div class="cwrap">
+  <div class="card">
+    <div class="k">Status layanan</div>
+    <div class="rowm"><span>QRIS utama</span><b><%- s.qr.qris_string ? badge('DONE') : badge('PENDING') %></b></div>
+    <div class="rowm"><span>Mode QR</span><b><%= esc(s.qr.mode) %></b></div>
+    <div class="rowm"><span>GoBiz (scanner pembayaran)</span><b><%- s.gobiz.linked ? badge('DONE') : badge('PENDING') %></b></div>
+    <div class="rowm"><span>Merchant</span><b><%= esc(s.gobiz.merchantName || s.gobiz.merchantId || '—') %></b></div>
+    <div class="rowm"><span>Telegram</span><b><%- s.tg.bot_token ? badge('DONE') : badge('PENDING') %></b></div>
+    <div class="rowm"><span>Login web</span><b><%= s.oauth.github_client_id || s.oauth.google_client_id ? 'Aktif' : 'Hanya melalui /bootstrap' %></b></div>
+    <div class="rowm"><span>Polling terakhir</span><b><%= esc(s.sys.lastPollMsg || '—') %> <%= s.sys.lastPollAt ? '(' + fmt(s.sys.lastPollAt) + ')' : '' %></b></div>
+  </div>
+
+  <form class="card" id="fQris" data-settings>
+    <div class="k">QRIS utama &amp; mode</div>
+    <label><span>Mode QR</span>
+      <select name="qr.mode">
+        <option value="dynamic" <%= s.qr.mode === 'dynamic' ? 'selected' : '' %>>Dinamis (nominal otomatis + kode unik)</option>
+        <option value="static" <%= s.qr.mode === 'static' ? 'selected' : '' %>>Statis (QR tetap + nominal besar)</option>
+      </select>
+    </label>
+    <label><span>String QRIS statis merchant</span>
+      <textarea name="qr.qris_string" rows="4" placeholder="Tempel string 000201010211266... hasil scan, bukan kode QR statis Anda"><%= esc(s.qr.qris_string) %></textarea>
+    </label>
+    <p class="hint">Scan QR statis GoBiz/GoPay dengan aplikasi scan apa pun → salin isinya (mulai 000201…). QRIS ini dipakai sebagai induk semua pembayaran. Mode dinamis menyisipkan nominal & kode unik otomatis; mode statis menampilkan QR induk + nominal.</p>
+    <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i>&nbsp;Simpan QRIS</button>
+    <div class="msg" id="msgFQris"></div>
+  </form>
+
+  <form class="card" id="fBilling" data-settings>
+    <div class="k">Biaya &amp; limit</div>
+    <label><span>Fee deposit (%)</span><input name="billing.fee_pct" type="number" step="0.1" min="0" value="<%= s.billing.fee_pct %>"></label>
+    <label><span>Fee minimum (Rp)</span><input name="billing.min_fee" type="number" min="0" value="<%= s.billing.min_fee %>"></label>
+    <label><span>Min nominal QRIS</span><input name="billing.min_qris" type="number" min="0" value="<%= s.billing.min_qris %>"></label>
+    <label><span>Max nominal QRIS</span><input name="billing.max_qris" type="number" min="0" value="<%= s.billing.max_qris %>"></label>
+    <label><span>Min penarikan</span><input name="billing.min_wd" type="number" min="0" value="<%= s.billing.min_wd %>"></label>
+    <label><span>Max penarikan</span><input name="billing.max_wd" type="number" min="0" value="<%= s.billing.max_wd %>"></label>
+    <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i>&nbsp;Simpan Biaya</button>
+    <div class="msg" id="msgFBilling"></div>
+  </form>
+
+  <form class="card" id="fOauth" data-settings>
+    <div class="k">Login web (Google/GitHub)</div>
+    <label><span>GitHub Client ID</span><input name="oauth.github_client_id" value="<%= esc(s.oauth.github_client_id) %>"></label>
+    <label><span>GitHub Client Secret</span><input name="oauth.github_client_secret" type="password" placeholder="Kosongkan jika tidak diubah" autocomplete="new-password"></label>
+    <label><span>Google Client ID</span><input name="oauth.google_client_id" value="<%= esc(s.oauth.google_client_id) %>"></label>
+    <label><span>Google Client Secret</span><input name="oauth.google_client_secret" type="password" placeholder="Kosongkan jika tidak diubah" autocomplete="new-password"></label>
+    <label><span>Email owner (auto-owner saat login)</span><input name="oauth.owner_email" value="<%= esc(s.oauth.owner_email) %>"></label>
+    <p class="hint">Callback GitHub: <b><%= esc(origin) %>/auth/github/callback</b><br>Callback Google: <b><%= esc(origin) %>/auth/google/callback</b></p>
+    <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i>&nbsp;Simpan OAuth</button>
+    <div class="msg" id="msgFOauth"></div>
+  </form>
+
+  <form class="card" id="fTg" data-settings>
+    <div class="k">Notifikasi Telegram</div>
+    <label><span>Bot token</span><input name="tg.bot_token" type="password" value="<%= esc(s.tg.bot_token) %>" autocomplete="new-password"></label>
+    <label><span>Chat ID</span><input name="tg.chat_id" value="<%= esc(s.tg.chat_id) %>"></label>
+    <p class="hint">Buat bot melalui @BotFather, kirim satu pesan ke bot tersebut, lalu panggil getUpdates untuk mengambil chat_id.</p>
+    <div class="rowlr">
+      <button class="btn" type="button" data-tgtest="1"><i class="fa-solid fa-paper-plane"></i>&nbsp;Kirim pesan uji</button>
+      <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i>&nbsp;Simpan Telegram</button>
+    </div>
+    <div class="msg" id="msgFTg"></div>
+  </form>
+
+  <div class="card" id="gobizCard">
+    <div class="k">Login GoBiz (scanner pembayaran otomatis)</div>
+    <% if (s.gobiz.linked) { %>
+      <div class="rowm"><span>Merchant</span><b><%= esc(s.gobiz.merchantName || s.gobiz.merchantId || '—') %></b></div>
+      <div class="rowm"><span>Nomor</span><b><%= esc(s.gobiz.phone || '—') %></b></div>
+      <div class="rowm"><span>Refresh token</span><b><%- s.gobiz.hasRefreshToken ? badge('DONE') : badge('PENDING') %></b></div>
+      <div class="rowlr">
+        <button class="btn" type="button" data-gobiz="refresh"><i class="fa-solid fa-rotate"></i>&nbsp;Perbarui token</button>
+        <button class="btn danger" type="button" data-gobiz="logout"><i class="fa-solid fa-right-from-bracket"></i>&nbsp;Logout GoBiz</button>
+      </div>
+    <% } else { %>
+      <label><span>Nomor (cara OTP)</span>
+        <div class="rowlr"><input name="gobiz.phone" placeholder="81234567890" style="flex:1"><select name="gobiz.cc" style="width:110px"><option value="+62">+62</option><option value="+60">+60</option><option value="+65">+65</option></select></div>
+      </label>
+      <div class="rowlr">
+        <button class="btn" type="button" data-gobiz="otp"><i class="fa-solid fa-envelope"></i>&nbsp;Kirim OTP</button>
+        <input name="gobiz.otp" placeholder="Kode OTP" style="flex:1">
+        <button class="btn primary" type="button" data-gobiz="verify"><i class="fa-solid fa-check"></i>&nbsp;Verifikasi &amp; simpan</button>
+      </div>
+      <div class="sep">atau</div>
+      <label><span>Email GoBiz</span><input name="gobiz.email" placeholder="email@merchant.id"></label>
+      <label><span>Password</span><input name="gobiz.password" type="password" placeholder="••••••••"></label>
+      <button class="btn primary" type="button" data-gobiz="password"><i class="fa-solid fa-right-to-bracket"></i>&nbsp;Login password</button>
+    <% } %>
+    <p class="hint">Login minimal satu kali agar polling pembayaran berjalan. Token disimpan aman; dapat diperbarui atau dicabut kapan saja dari halaman ini.</p>
+    <div class="msg" id="msgGobiz"></div>
+  </div>
+</div>

@@ -119,15 +119,15 @@ footer b { color: #fff; }
 .sbar .prof b { display: block; font-size: 14px; color: #fff; }
 .sbar .prof span { font-size: 12px; color: #A79E8D; }
 .sbar nav { padding: 12px 10px; }
-.sbar nav button { display: flex; align-items: center; gap: 11px; width: 100%; background: transparent; border: var(--bw) solid transparent; color: #D5CFC0; font: inherit; font-size: 14px; font-weight: 600; padding: 11px 12px; border-radius: 8px; cursor: pointer; text-align: left; margin-bottom: 4px; }
-.sbar nav button i { width: 18px; text-align: center; font-size: 15px; }
-.sbar nav button:hover { background: #211F1A; color: #fff; }
-.sbar nav button.on { background: var(--acc); color: #141414; border-color: var(--line); box-shadow: 3px 3px 0 #000; }
+.sbar nav a { display: flex; align-items: center; gap: 11px; width: 100%; background: transparent; border: var(--bw) solid transparent; color: #D5CFC0; font: inherit; font-size: 14px; font-weight: 600; padding: 11px 12px; border-radius: 8px; text-align: left; margin-bottom: 4px; text-decoration: none; }
+.sbar nav a i { width: 18px; text-align: center; font-size: 15px; }
+.sbar nav a:hover { background: #211F1A; color: #fff; }
+.sbar nav a.on { background: var(--acc); color: #141414; border-color: var(--line); box-shadow: 3px 3px 0 #000; }
 @media (max-width: 860px) {
   .dash { flex-direction: column; }
   .sbar { width: 100%; border-right: 0; border-bottom: var(--bw) solid var(--line); }
   .sbar nav { display: flex; overflow-x: auto; }
-  .sbar nav button { width: auto; white-space: nowrap; }
+  .sbar nav a { width: auto; white-space: nowrap; }
   .hero { padding: 48px 0 40px; }
 }
 

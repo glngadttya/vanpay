@@ -1,0 +1,12 @@
+<h2>Ringkasan platform</h2>
+<div class="grid g4">
+  <div class="card"><div class="k">Pengguna</div><div class="v"><%= stats.users %></div></div>
+  <div class="card"><div class="k">Total volume (gross)</div><div class="v"><%= rupiah(stats.volume) %></div></div>
+  <div class="card"><div class="k">Pendapatan fee</div><div class="v"><%= rupiah(stats.feesEarned) %></div></div>
+  <div class="card"><div class="k">Saldo terhutang user</div><div class="v"><%= rupiah(stats.totalBalance) %></div></div>
+  <div class="card"><div class="k">Transaksi</div><div class="v"><%= stats.successCount %><small> / <%= stats.payments %></small></div><div class="hov">Sukses <%= stats.successRate %>%</div></div>
+  <div class="card"><div class="k">Pending QRIS</div><div class="v"><%= stats.pendingPayments %></div></div>
+  <div class="card"><div class="k">Tarik pending</div><div class="v"><%= stats.pendingWithdraw %><small> · <%= rupiah(stats.pendingWithdrawSum) %></small></div></div>
+  <div class="card"><div class="k">Total penarikan</div><div class="v"><%= rupiah(stats.totalWithdraw) %></div></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="k">Deposit 14 hari terakhir</div><div style="margin-top:10px"><%- chartBars(stats.daily) %></div></div>

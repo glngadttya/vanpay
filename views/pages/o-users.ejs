@@ -1,0 +1,21 @@
+<h2>Pengguna</h2>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Akun</th><th>Email</th><th>Saldo</th><th>Total deposit</th><th>Total tarik</th><th>Menunggu</th><th>Gabung</th></tr></thead>
+      <tbody>
+        <% list.forEach((u) => { %>
+          <tr>
+            <td style="display:flex;gap:8px;align-items:center"><img src="<%= esc(u.avatar || '/logo.svg') %>" width="24" height="24" style="border-radius:50%"> <b><%= esc(u.name || u.email) %></b>&nbsp;<%- u.role === 'owner' ? badge('owner') : '' %></td>
+            <td><%= esc(u.email) %></td>
+            <td><b><%= rupiah(u.balance) %></b></td>
+            <td><%= rupiah(u.totalDeposit) %></td>
+            <td><%= rupiah(u.totalWithdraw) %></td>
+            <td><%= u.pendingWithdraw || '—' %></td>
+            <td><%= fmt(u.createdAt) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

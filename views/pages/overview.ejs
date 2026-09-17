@@ -1,0 +1,15 @@
+<h2>Ringkasan <%= esc(me.name || '') %></h2>
+<div class="grid g4">
+  <div class="card"><div class="k">Saldo</div><div class="v"><%= rupiah(stats.balance) %></div><div class="hov">Dapat ditarik kapan saja</div></div>
+  <div class="card"><div class="k">Total deposit</div><div class="v"><%= rupiah(stats.totalDeposit) %></div><div class="hov"><%= stats.countPaid %> transaksi berhasil</div></div>
+  <div class="card"><div class="k">Total tarik</div><div class="v"><%= rupiah(stats.totalWithdraw) %></div><div class="hov"><%= stats.pendingWithdraw ? 'Menunggu proses: ' + rupiah(stats.pendingWithdraw) : 'Tidak ada penarikan yang menunggu' %></div></div>
+  <div class="card"><div class="k">QRIS aktif</div><div class="v"><%= stats.pendingPayments %></div><div class="hov">Belum dibayar</div></div>
+</div>
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><div class="k">Deposit 14 hari terakhir</div><div style="margin-top:10px"><%- chartBars(stats.daily) %></div></div>
+  <div class="card">
+    <div class="k">Aksi cepat</div>
+    <a class="btn grad" style="width:100%;margin-top:12px" href="/dashboard/pay"><i class="fa-solid fa-qrcode"></i>&nbsp;Buat QRIS baru</a>
+    <a class="btn ghost" style="width:100%;margin-top:10px" href="/dashboard/withdraw"><i class="fa-solid fa-hand-holding-dollar"></i>&nbsp;Tarik dana</a>
+  </div>
+</div>

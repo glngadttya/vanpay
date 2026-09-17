@@ -1,15 +1,7 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Masuk — VanPay Gateway</title>
-  <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="/css/style.css">
+  <%- include('partials/head', { title: 'Masuk — VanPay Gateway' }) %>
 </head>
 <body>
   <header class="nav">
@@ -34,19 +26,15 @@
           Masuk dengan GitHub
         </a>
       </div>
+      <% if (loginErr) { %>
+        <div class="msg err" id="msg"><%= esc(loginErr) %></div>
+      <% } %>
       <div class="note">
         <i class="fa-solid fa-circle-info"></i>&nbsp;Login pertama kali untuk pemilik (owner): buka tautan <b>/bootstrap/&lt;token&gt;</b> yang tercetak pada log server saat proses boot. Setelah menjadi owner, seluruh pengaturan (QRIS, GoBiz, Telegram, OAuth) dapat dikelola melalui dashboard → <b><i class="fa-solid fa-gear"></i> Pengaturan</b>.
       </div>
-      <div class="msg" id="msg"></div>
     </div>
   </div>
-  <script>
-    const q = new URLSearchParams(location.search);
-    if (q.get('err')) {
-      const m = document.getElementById('msg');
-      m.className = 'msg err';
-      m.textContent = q.get('err');
-    }
-  </script>
+
+  <%- include('partials/footer') %>
 </body>
 </html>

@@ -1,15 +1,7 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VanPay Gateway — Terima Pembayaran QRIS secara Instan</title>
-  <link rel="icon" href="/logo.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="/css/style.css">
+  <%- include('partials/head', { title: 'VanPay Gateway — Terima Pembayaran QRIS secara Instan' }) %>
   <meta name="description" content="Payment gateway QRIS. Login web, buat QRIS secara langsung, saldo masuk otomatis, penarikan via DANA/GoPay/ShopeePay.">
 </head>
 <body>
@@ -105,12 +97,6 @@
     </div>
   </div>
 
-  <footer>
-    <div class="wrap">
-      <span>© <span id="yr"></span> <b>VanPay Gateway</b>. Seluruh hak cipta dilindungi.</span>
-      <span>Powered by infrastructure stabil &amp; otomatis.</span>
-    </div>
-  </footer>
-  <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+  <%- include('partials/footer') %>
 </body>
 </html>

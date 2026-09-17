@@ -1,0 +1,22 @@
+<div class="pay-box">
+  <div><img src="<%= txn.qrUrl %>" alt="QRIS" id="qrImg"></div>
+  <div class="pay-info">
+    <div class="amount"><%= rupiah(txn.payAmount) %></div>
+    <div class="to"><i class="fa-solid fa-qrcode"></i>&nbsp;Pindai &amp; bayar menggunakan aplikasi pembayaran QRIS apa pun</div>
+    <div class="rowm"><span>Nominal</span><b><%= rupiah(txn.amount) %></b></div>
+    <div class="rowm"><span>Fee</span><b><%= rupiah(txn.fee) %></b></div>
+    <div class="rowm"><span>Kode unik</span><b>+<%= txn.uniqueCode %></b></div>
+    <div class="rowm"><span>Status</span><b id="qrSt"><%= badge(txn.status) %></b></div>
+    <div class="rowm"><span>Berlaku sampai</span><b><%= fmt(txn.expiresAt) %></b></div>
+    <% if (txn.status === 'PENDING') { %>
+      <div class="rowm"><span>Waktu tersisa</span><b class="count" id="qrCount" data-expires="<%= txn.expiresAt %>">—</b></div>
+    <% } %>
+  </div>
+</div>
+<% if (txn.status === 'PENDING') { %>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  if (window.vanpayPoll) vanpayPoll(<%= JSON.stringify(txn.id) %>, <%= JSON.stringify(txn.statusUrl) %>);
+});
+</script>
+<% } %>

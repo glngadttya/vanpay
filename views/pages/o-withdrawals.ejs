@@ -1,0 +1,59 @@
+<h2>Penarikan</h2>
+<div class="card" style="margin-bottom:16px">
+  <div class="k">Menunggu proses (<%= pending.length %>)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>User</th><th>Nominal</th><th>Metode</th><th>Akun</th><th>Aksi</th></tr></thead>
+      <tbody>
+        <% if (pending.length) { %>
+          <% pending.forEach((w) => { %>
+            <tr>
+              <td><b><%= esc(w.id) %></b></td>
+              <td><%= w.user ? esc(w.user.name || w.user.email) : '#' + w.user_id %></td>
+              <td><b><%= rupiah(w.amount) %></b></td>
+              <td><%= esc(w.method) %></td>
+              <td><%= esc(w.accountName || '') %> <span class="hov"><%= esc(w.accountNumber || '') %></span></td>
+              <td>
+                <button class="btn green" style="padding:6px 12px;font-size:12px" data-wd="<%= esc(w.id) %>" data-act="approve"><i class="fa-solid fa-check"></i>&nbsp;Tandai selesai</button>
+                <button class="btn danger" style="padding:6px 12px;font-size:12px" data-wd="<%= esc(w.id) %>" data-act="reject"><i class="fa-solid fa-xmark"></i>&nbsp;Tolak</button>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="6" class="empty">Tidak ada penarikan menunggu</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="card">
+  <div class="k">Riwayat semua</div>
+  <div class="inline" style="margin:10px 0">
+    <a class="btn ghost <%= !filter ? 'primary' : '' %>" style="padding:6px 12px;font-size:12px" href="/dashboard/o-withdrawals">Semua</a>
+    <% ['PENDING', 'DONE', 'REJECTED'].forEach((s) => { %>
+      <a class="btn ghost <%= filter === s ? 'primary' : '' %>" style="padding:6px 12px;font-size:12px" href="/dashboard/o-withdrawals?status=<%= s %>"><%= s %></a>
+    <% }) %>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>User</th><th>Nominal</th><th>Metode</th><th>Status</th><th>Catatan</th><th>Waktu</th></tr></thead>
+      <tbody>
+        <% if (all.length) { %>
+          <% all.forEach((w) => { %>
+            <tr>
+              <td><b><%= esc(w.id) %></b></td>
+              <td><%= w.user ? esc(w.user.name || w.user.email) : '#' + w.user_id %></td>
+              <td><%= rupiah(w.amount) %></td>
+              <td><%= esc(w.method) %></td>
+              <td><%- badge(w.status) %></td>
+              <td><%= esc(w.adminNote || '') %></td>
+              <td><%= fmt(w.requestedAt) %></td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="7" class="empty">Tidak ada riwayat</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

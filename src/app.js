@@ -16,13 +16,18 @@ const withdrawals = require('./services/withdrawals');
 const statsSvc = require('./services/stats');
 const poller = require('./services/poller');
 const gstate = require('./services/gobiz-state');
+const pages = require('./pages');
+const vh = require('../lib/view-helpers');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const VIEWS_DIR = path.join(__dirname, '..', 'views');
 
 function buildApp(db) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', true);
+  app.set('view engine', 'ejs');
+  app.set('views', VIEWS_DIR);
   app.use(securityHeaders);
   app.use(express.json({ limit: '256kb' }));
 
@@ -173,12 +178,46 @@ function buildApp(db) {
     res.redirect('/');
   }));
 
-  // ---------------- public static ----------------
+  // ---------------- pages ----------------
 
-  app.use(express.static(PUBLIC_DIR));
-  app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
-  app.get('/login', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.html')));
-  app.get('/dashboard', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'dashboard.html')));
+  const renderLocals = () => ({
+    esc: vh.esc,
+    rupiah: vh.rupiah,
+    fmt: vh.fmt,
+    badge: vh.badge,
+    chartBars: vh.chartBars,
+    ledgerTypes: vh.ledgerTypes,
+  });
+
+  async function renderDash(req, res, pageRaw) {
+    const page = pages.resolvePage(pageRaw, req.user.role, req.query);
+    const pl = await pages.loadPage(db, req.user, page, { query: req.query, origin: originOf(req) });
+    if (!pl) {
+      const e = new Error('Halaman tidak ditemukan');
+      e.status = 404;
+      e.expose = true;
+      throw e;
+    }
+    res.render('dashboard', { title: 'Dashboard — VanPay Gateway', ...renderLocals(), ...pl });
+  }
+
+  async function guard(req, res, next) {
+    await loadUser(req);
+    if (!req.user) {
+      return res.status(200).send('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/login"><title>VanPay</title></head><body style="font-family:sans-serif;padding:2rem;text-align:center">Sedang mengalihkan ke halaman masuk&hellip;</body></html>');
+    }
+    if (req.user.status !== 'active') {
+      clearSession(res);
+      return res.redirect('/');
+    }
+    next();
+  }
+
+  app.use(express.static(PUBLIC_DIR, { index: false }));
+  app.get('/', (_req, res) => res.render('index', { title: 'VanPay Gateway — Terima Pembayaran QRIS secara Instan' }));
+  app.get('/login', (req, res) => res.render('login', { title: 'Masuk — VanPay Gateway', esc: vh.esc, loginErr: String(req.query.err || '') }));
+  app.get('/dashboard', guard, withAsync((req, res) => renderDash(req, res, '')));
+  app.get('/dashboard/:page', guard, withAsync((req, res) => renderDash(req, res, req.params.page)));
   app.get('/admin', (_req, res) => res.redirect('/dashboard'));
 
   app.get('/auth/me', withAsync(async (req, res) => {

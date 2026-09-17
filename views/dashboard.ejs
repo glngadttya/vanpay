@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <%- include('partials/head', { title: 'Dashboard — VanPay Gateway' }) %>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/logo.svg" alt="VanPay"><b>VanPay</b></a>
+      <nav class="spacer"></nav>
+      <a class="btn ghost" style="width:100%;border-color:#3A3529;color:#faf6ea;background:#141414" href="/logout"><i class="fa-solid fa-right-from-bracket"></i>&nbsp;Keluar</a>
+    </div>
+  </header>
+
+  <div class="dash">
+    <aside class="sbar">
+      <%- include('partials/sidebar') %>
+    </aside>
+    <main>
+      <% if (msg) { %>
+        <div class="msg ok" id="flashMsg" data-auto="1"><i class="fa-solid fa-circle-check"></i>&nbsp;<%= esc(msg) %></div>
+      <% } %>
+      <% if (err) { %>
+        <div class="msg err" id="flashMsg" data-auto="1"><i class="fa-solid fa-circle-exclamation"></i>&nbsp;<%= esc(err) %></div>
+      <% } %>
+      <%- include('pages/' + page) %>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

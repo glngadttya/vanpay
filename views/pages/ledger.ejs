@@ -1,0 +1,23 @@
+<h2>Mutasi saldo</h2>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Waktu</th><th>Tipe</th><th>Nominal</th><th>Ref</th><th>Catatan</th></tr></thead>
+      <tbody>
+        <% if (rows.length) { %>
+          <% rows.forEach((r) => { %>
+            <tr>
+              <td><%= fmt(r.createdAt) %></td>
+              <td><%= ledgerTypes[r.type] || r.type %></td>
+              <td style="color:<%= Number(r.amount) >= 0 ? 'var(--ok)' : 'var(--bad)' %>;font-weight:700"><%= Number(r.amount) >= 0 ? '+' : '' %><%= rupiah(Math.abs(r.amount)) %></td>
+              <td><%= esc(r.ref || '—') %></td>
+              <td><%= esc(r.note || '') %></td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="5" class="empty">Belum ada mutasi</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

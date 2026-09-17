@@ -1,0 +1,27 @@
+<div class="prof">
+  <img src="<%= me.avatar || '/logo.svg' %>" width="40" height="40" alt="">
+  <div>
+    <b><%= esc(me.name || me.email) %></b>
+    <span><%= esc(me.email) %></span>
+    <% if (me.role === 'owner') { %>
+      <span><%= badge('owner') %> owner</span>
+    <% } else { %>
+      <span>member</span>
+    <% } %>
+  </div>
+</div>
+<nav id="nav">
+  <% if (me.role === 'owner') { %>
+    <a class="<%= page === 'o-overview' ? 'on' : '' %>" href="/dashboard/o-overview"><i class="fa-solid fa-chart-simple"></i><span>Ringkasan</span></a>
+    <a class="<%= page === 'o-users' ? 'on' : '' %>" href="/dashboard/o-users"><i class="fa-solid fa-users"></i><span>Pengguna</span></a>
+    <a class="<%= page === 'o-payments' ? 'on' : '' %>" href="/dashboard/o-payments"><i class="fa-solid fa-money-bill-transfer"></i><span>Pembayaran</span></a>
+    <a class="<%= page === 'o-withdrawals' ? 'on' : '' %>" href="/dashboard/o-withdrawals"><i class="fa-solid fa-hand-holding-dollar"></i><span>Penarikan</span></a>
+    <a class="<%= page === 'o-setup' ? 'on' : '' %>" href="/dashboard/o-setup"><i class="fa-solid fa-gear"></i><span>Pengaturan</span></a>
+  <% } else { %>
+    <a class="<%= page === 'overview' ? 'on' : '' %>" href="/dashboard/overview"><i class="fa-solid fa-chart-simple"></i><span>Ringkasan</span></a>
+    <a class="<%= page === 'pay' ? 'on' : '' %>" href="/dashboard/pay"><i class="fa-solid fa-qrcode"></i><span>Buat QRIS</span></a>
+    <a class="<%= page === 'payments' ? 'on' : '' %>" href="/dashboard/payments"><i class="fa-solid fa-clock-rotate-left"></i><span>Riwayat QRIS</span></a>
+    <a class="<%= page === 'withdraw' ? 'on' : '' %>" href="/dashboard/withdraw"><i class="fa-solid fa-hand-holding-dollar"></i><span>Tarik Dana</span></a>
+    <a class="<%= page === 'ledger' ? 'on' : '' %>" href="/dashboard/ledger"><i class="fa-solid fa-list-ul"></i><span>Mutasi Saldo</span></a>
+  <% } %>
+</nav>
