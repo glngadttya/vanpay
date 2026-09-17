@@ -5,7 +5,7 @@ Payment gateway QRIS mandiri. User membuat QRIS dari dashboard, dibayar orang �
 - **Payment**: scrape akun GoBiz/GoPay Merchant milik owner (QRIS dinamis dari QRIS statis merchant).
 - **Login web**: Google & GitHub OAuth (opsional; owner cukup melalui link bootstrap).
 - **Peran**: dashboard **user** (buat QRIS, riwayat, tarik, mutasi, statistik) & dashboard **owner** (statistik platform, kelola pengguna, proses penolakan/penyetujuan penarikan, dan **semua pengaturan**).
-- **Render**: seluruh halaman dirender server-side (EJS) — tidak ada SPA; AJAX hanya untuk aksi & polling status QR real-time.
+- **Render**: seluruh frontend bersifat **EJS-only** — CSS dan JavaScript klien tertanam langsung di templat (`head.ejs`, `dashboard.ejs`); tidak ada file `.css`/`.js` statis.
 - **Setup 100% lewat web**: QRIS utama, mode QR, fee/limit, OAuth, Telegram, dan login GoBiz semuanya di Dashboard → **Pengaturan** (tanpa perlu mengubah env & tanpa `PUBLIC_URL`).
 - **Notifikasi**: bot Telegram untuk setiap deposit masuk dan penarikan.
 - **Stack**: Node ≥ 22, Express, CommonJS, SQLite `node:sqlite` (bawaan).
