@@ -27,6 +27,13 @@
             </tbody>
           </table>
         </div>
+        <p class="hint">Contoh:</p>
+        <div class="term">
+          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">health.sh</span></div>
+<pre><span class="c-prompt">$</span> curl https://payment.savantlabs.my.id/health
+<span class="c-com"># respon sukses (HTTP 200)</span>
+{ <span class="c-k">"ok"</span>: <span class="c-b">true</span>, <span class="c-k">"name"</span>: <span class="c-s">"vanpay"</span>, <span class="c-k">"uptime"</span>: <span class="c-n">482</span> }</pre>
+        </div>
       </div>
 
       <div class="sep"><span>Status pembayaran (publik — tanpa login)</span></div>
@@ -40,8 +47,12 @@
           </table>
         </div>
         <p class="hint">Contoh:</p>
-<pre style="background:#141414;color:#f8f8f2;padding:14px;border:2px solid #141414;box-shadow:3px 3px 0 #141414;overflow-x:auto;font-size:12.5px;line-height:1.7">curl https://payment.savantlabs.my.id/api/qris/PN-XXXX/status
-→ { "ok": true, "data": { "status": "PAID", "paidAt": "2026-09-17T..." } }</pre>
+        <div class="term">
+          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">status.sh</span></div>
+<pre><span class="c-prompt">$</span> curl https://payment.savantlabs.my.id/api/qris/PN-MU6B0C1Q2AA897/status
+<span class="c-com"># respon sukses (HTTP 200)</span>
+{ <span class="c-k">"ok"</span>: <span class="c-b">true</span>, <span class="c-k">"data"</span>: { <span class="c-k">"status"</span>: <span class="c-s">"PAID"</span>, <span class="c-k">"paidAt"</span>: <span class="c-s">"2026-09-18T02:11:14.754Z"</span> } }</pre>
+        </div>
       </div>
 
       <div class="sep"><span>User (sesi login dashboard)</span></div>
@@ -61,24 +72,32 @@
           </table>
         </div>
         <p class="hint">Otorisasi: seluruh endpoint di atas memerlukan cookie sesi dari login Google/GitHub. Autentikasi API programatik (token) belum tersedia.</p>
-      </div>
-
-      <div class="sep"><span>Owner / admin (role owner)</span></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge" style="background:#6366F1;color:#fff">GET</span></td><td><code>/api/admin/stats</code></td><td>Statistik platform</td></tr>
-              <tr><td><span class="badge" style="background:#6366F1;color:#fff">GET</span></td><td><code>/api/admin/status</code></td><td>Status GoBiz, QRIS, dan jumlah owner</td></tr>
-              <tr><td><span class="badge" style="background:#6366F1;color:#fff">GET</span></td><td><code>/api/admin/settings</code></td><td>Membaca seluruh pengaturan</td></tr>
-              <tr><td><span class="badge" style="background:#FFA94D">POST</span></td><td><code>/api/admin/settings</code></td><td>Simpan pengaturan. Body: <code>{ entries: {...} }</code></td></tr>
-              <tr><td><span class="badge" style="background:#FFA94D">POST</span></td><td><code>/api/admin/gobiz/otp · /verify · /password · /refresh · /logout</code></td><td>Manajemen koneksi GoBiz (OTP / email-password)</td></tr>
-              <tr><td><span class="badge" style="background:#FFA94D">POST</span></td><td><code>/api/admin/telegram/test</code></td><td>Kirim pesan uji Telegram</td></tr>
-              <tr><td><span class="badge" style="background:#6366F1;color:#fff">GET</span></td><td><code>/api/admin/users · /payments · /withdrawals</code></td><td>Daftar pengguna, pembayaran, penarikan</td></tr>
-              <tr><td><span class="badge" style="background:#FFA94D">POST</span></td><td><code>/api/admin/withdrawals/:id/approve · /:id/reject</code></td><td>Setujui / tolak penarikan</td></tr>
-            </tbody>
-          </table>
+        <p class="hint">Contoh buat QRIS:</p>
+        <div class="term">
+          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">create-qris.sh</span></div>
+<pre><span class="c-prompt">$</span> curl -X POST https://payment.savantlabs.my.id/api/qris/create \
+  -H <span class="c-s">"Cookie: vanpay=&lt;session&gt;"</span> \
+  -H <span class="c-s">"Content-Type: application/json"</span> \
+  -d <span class="c-s">'{"amount": 10000, "note": "Order #123"}'</span>
+<span class="c-com"># respon sukses (HTTP 200)</span>
+{ <span class="c-k">"ok"</span>: <span class="c-b">true</span>, <span class="c-k">"data"</span>: {
+  <span class="c-k">"id"</span>: <span class="c-s">"PN-MU6B0C1Q2AA897"</span>,
+  <span class="c-k">"amount"</span>: <span class="c-n">10000</span>,
+  <span class="c-k">"fee"</span>: <span class="c-n">70</span>,
+  <span class="c-k">"payAmount"</span>: <span class="c-n">10071</span>,
+  <span class="c-k">"uniqueCode"</span>: <span class="c-n">1</span>,
+  <span class="c-k">"status"</span>: <span class="c-s">"PENDING"</span>,
+  <span class="c-k">"note"</span>: <span class="c-s">"Order #123"</span>,
+  <span class="c-k">"qrUrl"</span>: <span class="c-s">"/api/qris/PN-MU6B0C1Q2AA897/qr.png"</span>,
+  <span class="c-k">"statusUrl"</span>: <span class="c-s">"/api/qris/PN-MU6B0C1Q2AA897/status"</span>
+} }</pre>
+        </div>
+        <p class="hint">Contoh cek saldo:</p>
+        <div class="term">
+          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">cek-saldo.sh</span></div>
+<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"Cookie: vanpay=&lt;session&gt;"</span> https://payment.savantlabs.my.id/api/bal
+<span class="c-com"># respon sukses (HTTP 200)</span>
+{ <span class="c-k">"ok"</span>: <span class="c-b">true</span>, <span class="c-k">"data"</span>: { <span class="c-k">"balance"</span>: <span class="c-n">10071</span> } }</pre>
         </div>
       </div>
 
