@@ -1,5 +1,4 @@
 <div class="float-nav">
-  <button class="back" id="btnBack" aria-label="Kembali" title="Kembali"><i class="fa-solid fa-arrow-left"></i><span id="btnBackLabel">kembali</span></button>
   <button class="fab" id="btnMenu" aria-label="Menu" title="Menu"><i class="fa-solid fa-bars"></i></button>
 </div>
 
@@ -23,35 +22,9 @@
   function close() { if (drawer) drawer.classList.remove('open'); if (scrim) scrim.classList.remove('on'); document.body.style.overflow = ''; }
   var bMenu = document.getElementById('btnMenu');
   var bClose = document.getElementById('btnClose');
-  var bBack = document.getElementById('btnBack');
-  var bLabel = document.getElementById('btnBackLabel');
   if (bMenu && drawer) bMenu.addEventListener('click', open);
   if (bClose && drawer) bClose.addEventListener('click', close);
   if (scrim) scrim.addEventListener('click', close);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
-  if (bBack) {
-    function labelFor(p) {
-      if (p === '/') return 'kembali ke Beranda';
-      if (p === '/cara-kerja') return 'kembali ke Cara Kerja';
-      if (p === '/docs') return 'kembali ke Dokumentasi API';
-      if (p === '/login') return 'kembali ke halaman Masuk';
-      if (p.indexOf('/dashboard') === 0) return 'kembali ke Dashboard';
-      return 'kembali ke halaman sebelumnya';
-    }
-    var fromVanpay = document.referrer && document.referrer.indexOf(location.host) !== -1;
-    if (fromVanpay) {
-      var backPath = '/';
-      try {
-        var up = document.createElement('a');
-        up.href = document.referrer;
-        backPath = up.pathname || '/';
-      } catch (_) {}
-      if (bLabel) bLabel.textContent = labelFor(backPath);
-      bBack.addEventListener('click', function () { history.back(); });
-    } else {
-      if (bLabel) bLabel.textContent = 'kembali ke Beranda';
-      bBack.addEventListener('click', function () { location.href = '/'; });
-    }
-  }
 })();
 </script>
