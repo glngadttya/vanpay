@@ -4,14 +4,6 @@
   <%- include('partials/head', { title: 'Cara Kerja — VanPay Gateway' }) %>
 </head>
 <body>
-  <header class="nav">
-    <div class="wrap">
-      <a class="brand" href="/"><img src="/logo.svg" alt="VanPay"><b>VanPay</b></a>
-      <nav class="spacer"></nav>
-      <a class="btn ghost" href="/"><i class="fa-solid fa-house"></i>&nbsp;Beranda</a>
-    </div>
-  </header>
-
   <section class="how">
     <div class="wrap">
       <h2>Cara kerja</h2>
@@ -52,6 +44,7 @@
     </div>
   </div>
 
+  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'cara' }), foot: '' }) %>
   <%- include('partials/footer') %>
 </body>
 </html>

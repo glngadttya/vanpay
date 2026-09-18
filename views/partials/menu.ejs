@@ -1,0 +1,33 @@
+<button class="fab fab-back" id="btnBack" aria-label="Kembali" title="Kembali"><i class="fa-solid fa-arrow-left"></i></button>
+<button class="fab fab-burger" id="btnMenu" aria-label="Menu" title="Menu"><i class="fa-solid fa-bars"></i></button>
+
+<div class="scrim" id="scrim"></div>
+<nav class="drawer" id="drawer" aria-label="Menu navigasi">
+  <div class="drawer-top">
+    <a class="brand" href="/"><img src="/logo.svg" alt="VanPay"><b>VanPay</b></a>
+    <button class="fab fab-x" id="btnClose" aria-label="Tutup" title="Tutup"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="drawer-body"><%- body %></div>
+  <% if (foot && foot.length) { %>
+    <div class="drawer-foot"><%- foot %></div>
+  <% } %>
+</nav>
+<script>
+(function () {
+  var drawer = document.getElementById('drawer');
+  var scrim = document.getElementById('scrim');
+  function open() { drawer.classList.add('open'); scrim.classList.add('on'); document.body.style.overflow = 'hidden'; }
+  function close() { drawer.classList.remove('open'); scrim.classList.remove('on'); document.body.style.overflow = ''; }
+  var bMenu = document.getElementById('btnMenu');
+  var bClose = document.getElementById('btnClose');
+  var bBack = document.getElementById('btnBack');
+  if (bMenu && drawer) bMenu.addEventListener('click', open);
+  if (bClose && drawer) bClose.addEventListener('click', close);
+  if (scrim) scrim.addEventListener('click', close);
+  if (bBack) bBack.addEventListener('click', function () {
+    if (document.referrer && document.referrer.indexOf(location.host) !== -1) history.back();
+    else location.href = '/';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
+</script>

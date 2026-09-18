@@ -4,15 +4,7 @@
   <%- include('partials/head', { title: 'Dokumentasi API — VanPay Gateway' }) %>
 </head>
 <body>
-  <header class="nav">
-    <div class="wrap">
-      <a class="brand" href="/"><img src="/logo.svg" alt="VanPay"><b>VanPay</b></a>
-      <nav class="spacer"></nav>
-      <a class="btn ghost" href="/"><i class="fa-solid fa-house"></i>&nbsp;Beranda</a>
-    </div>
-  </header>
-
-  <main style="padding:26px 0 10px">
+  <main style="padding:96px 0 10px">
     <div class="wrap">
       <h2>Dokumentasi API</h2>
       <p class="hint" style="font-size:15px;color:var(--muted)">REST API VanPay Gateway. Base URL akses dibatasi per server — verifikasi nilai aktual melalui panel hosting Anda.</p>
@@ -108,6 +100,7 @@
     </div>
   </main>
 
+  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'docs' }), foot: '' }) %>
   <%- include('partials/footer') %>
 </body>
 </html>
