@@ -106,6 +106,13 @@ code { background: #EFEADF; border: 1px solid #C9C2AE; padding: 1px 5px; border-
 .term .c-b { color: #FF7B72; }
 .term .c-dim { color: #6E7681; }
 
+/* ---------- modal (developer tools) ---------- */
+.kmodal { position: fixed; inset: 0; background: rgba(20, 20, 20, .55); z-index: 100; display: grid; place-items: center; padding: 16px; }
+.kmodal-box { position: relative; width: min(460px, 100%); background: var(--bg); border: var(--bw) solid var(--line); box-shadow: 5px 5px 0 var(--line); padding: 22px 20px 18px; }
+.kmodal-box h3 { margin: 0 0 6px; }
+.kmodal-box .fab-x { position: absolute; top: 10px; right: 10px; }
+.kmodal-box input[type="text"] { width: 100%; }
+
 /* ---------- auth pages ---------- */
 .auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 20px 16px 48px; }
 .auth-card { background: var(--surface); border: var(--bw) solid var(--line); border-radius: var(--r); box-shadow: 6px 6px 0 var(--line); width: min(420px, 100%); padding: 36px 32px; }

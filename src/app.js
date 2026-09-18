@@ -1,4 +1,5 @@
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const QRCode = require('qrcode');
 
@@ -52,12 +53,29 @@ function buildApp(db) {
     res.setHeader('Set-Cookie', 'vanpay=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
   };
 
+  const sha256 = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
+  const getApiKey = (req) => {
+    const h = req.header('x-api-key') || '';
+    if (h && h.trim()) return h.trim();
+    const auth = req.header('authorization') || '';
+    const m = /^Bearer\s+(.+)$/i.exec(auth);
+    return m ? m[1].trim() : null;
+  };
+
   async function loadUser(req) {
-    const token = req.cookies.vanpay;
-    if (!token) return null;
-    const s = await db.sessions.get(token);
-    if (!s) return null;
-    req.user = s.user;
+    const sToken = req.cookies.vanpay;
+    if (sToken) {
+      const s = await db.sessions.get(sToken);
+      if (s) {
+        req.user = s.user;
+        return;
+      }
+    }
+    const apiRaw = getApiKey(req);
+    if (apiRaw) {
+      const k = await db.apiKeys.getByHash(sha256(apiRaw));
+      if (k) req.user = await db.users.get(k.user_id);
+    }
   }
 
   async function requireAuth(req, res, next) {
@@ -82,6 +100,7 @@ function buildApp(db) {
   const rlWd = makeRl((req) => (req.user ? 'w' + req.user.id : clientIp(req)), { windowMs: 60000, max: 8 });
   const rlBootstrap = makeRl(() => 'bootstrap', { windowMs: 60000, max: 10 });
   const rlOtp = makeRl((req) => (req.user ? 'g' + req.user.id : clientIp(req)), { windowMs: 60000, max: 6 });
+  const rlKey = makeRl((req) => (req.user ? 'k' + req.user.id : clientIp(req)), { windowMs: 60000, max: 10 });
 
   const ok = (res, data) => res.json({ ok: true, data });
   const withAsync = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -298,6 +317,40 @@ function buildApp(db) {
       accountName: req.body.accountName,
     });
     ok(res, sanitizeWd(wd, true));
+  }));
+
+  // ---------------- developer tools (api keys) ----------------
+
+  app.get('/api/keys', requireAuth, withAsync(async (req, res) => {
+    const rows = await db.apiKeys.listByUser(req.user.id);
+    ok(res, rows.map((k) => ({
+      id: k.id,
+      name: k.name,
+      prefix: k.key_prefix,
+      createdAt: k.created_at,
+      lastUsedAt: k.last_used_at,
+      revoked: !!k.revoked_at,
+    })));
+  }));
+
+  app.post('/api/keys', requireAuth, rlKey, withAsync(async (req, res) => {
+    const name = String(req.body.name || '').trim().slice(0, 60);
+    const raw = 'vk_' + crypto.randomBytes(16).toString('hex');
+    const row = await db.apiKeys.create({
+      userId: req.user.id,
+      keyPrefix: raw.slice(0, 8),
+      keyHash: sha256(raw),
+      name: name || null,
+    });
+    logger.info(`[keys] buat api key #${row.id} user#${req.user.id}`);
+    ok(res, { id: row.id, name: row.name, key: raw, prefix: row.key_prefix, createdAt: row.created_at });
+  }));
+
+  app.delete('/api/keys/:id', requireAuth, withAsync(async (req, res) => {
+    const id = Number(req.params.id);
+    const done = await db.apiKeys.revoke(id, req.user.id);
+    if (!done) return res.status(404).json({ ok: false, error: 'Key tidak ditemukan' });
+    ok(res, { revoked: true });
   }));
 
   // ---------------- owner api ----------------

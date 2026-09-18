@@ -5,7 +5,7 @@ const paymentsSvc = require('./services/payments');
 const gstate = require('./services/gobiz-state');
 const withdrawalsSvc = require('./services/withdrawals');
 
-const USER_PAGES = new Set(['overview', 'pay', 'payments', 'withdraw', 'ledger']);
+const USER_PAGES = new Set(['overview', 'pay', 'payments', 'withdraw', 'ledger', 'developers']);
 const OWNER_PAGES = new Set(['o-overview', 'o-users', 'o-payments', 'o-withdrawals', 'o-setup']);
 
 function publicUser(u) {
@@ -80,6 +80,14 @@ async function loadPage(db, user, page, ctx) {
     pl.rows = rows.map((r) => ({
       id: r.id, type: r.type, amount: r.amount, ref: r.ref, note: r.note, createdAt: r.created_at,
     }));
+    return pl;
+  }
+  if (page === 'developers') {
+    const rows = await db.apiKeys.listByUser(user.id);
+    pl.keys = rows.map((k) => ({
+      id: k.id, name: k.name, prefix: k.key_prefix, createdAt: k.created_at, lastUsedAt: k.last_used_at, revoked: !!k.revoked_at,
+    }));
+    pl.apiBase = `${ctx.origin || ''}`;
     return pl;
   }
 

@@ -1,0 +1,14 @@
+cd views/partials
+put views/partials/head.ejs
+put views/partials/menu.ejs
+put views/partials/sidebar.ejs
+cd /views/pages
+put views/pages/o-users.ejs
+cd /views
+put views/index.ejs
+put views/cara.ejs
+put views/docs.ejs
+put views/login.ejs
+put views/dashboard.ejs
+rm /public/logo.svg
+bye

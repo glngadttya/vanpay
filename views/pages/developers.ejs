@@ -1,0 +1,110 @@
+<h2>Developer Tools</h2>
+<div class="card">
+  <p class="hint" style="margin:0 0 14px"><b>API Key</b> memberi akses programatik ke seluruh endpoint API atas nama akun Anda (saldo, QRIS, penarikan, statistik) tanpa sesi login browser. Cukup kirim header <code>X-API-Key: &lt;kunci&gt;</code> atau <code>Authorization: Bearer &lt;kunci&gt;</code>. Kunci hanya ditampilkan satu kali saat dibuat.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <button class="btn grad" id="btnNewKey" type="button"><i class="fa-solid fa-key"></i>&nbsp;Buat Kunci API</button>
+    <a class="btn ghost" href="/docs"><i class="fa-solid fa-book"></i>&nbsp;Dokumentasi API</a>
+  </div>
+  <div class="msg" id="msgKeys"></div>
+</div>
+
+<div id="keyList">
+  <div class="card" style="margin-top:14px">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nama</th><th>Prefix</th><th>Dibuat</th><th>Terakhir dipakai</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <% if (keys.length) { %>
+            <% keys.forEach((k) => { %>
+              <tr data-id="<%= k.id %>">
+                <td><b><%= esc(k.name || 'Tanpa nama') %></b></td>
+                <td><code><%= esc(k.prefix) %>…</code></td>
+                <td><%= fmt(k.createdAt) %></td>
+                <td><%= k.lastUsedAt ? fmt(k.lastUsedAt) : 'Belum dipakai' %></td>
+                <td><%- k.revoked ? badge('REVOKED') : badge('AKTIF') %></td>
+                <td><button class="btn danger sm" type="button" data-revoke="<%= k.id %>" <%= k.revoked ? 'disabled' : '' %>><i class="fa-solid fa-trash-can"></i>&nbsp;Cabut</button></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="6" class="empty">Belum ada kunci API. Buat satu untuk mulai integrasi.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="kmodal" id="kmodal" hidden>
+  <div class="kmodal-box">
+    <button class="fab fab-x kclose" type="button" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+    <h3 id="kmodalTitle">Buat Kunci API</h3>
+    <form id="frmKey">
+      <div class="row"><label>Nama kunci (opsional)</label><input type="text" id="inKeyName" maxlength="60" placeholder="contoh: bot telegram saya"></div>
+      <button class="btn grad" type="submit" id="btnKeyDo"><i class="fa-solid fa-key"></i>&nbsp;Buat</button>
+    </form>
+    <div id="secretWrap" hidden>
+      <div class="row"><label>Kunci API — salin sekarang, hanya tampil sekali</label><input type="text" id="secretBox" readonly></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" type="button" id="btnCopy"><i class="fa-solid fa-copy"></i>&nbsp;Salin</button>
+        <button class="btn ghost" type="button" id="btnDone">Selesai</button>
+      </div>
+      <div class="msg" id="msgSecret"></div>
+    </div>
+    <div class="msg" id="msgKeyErr"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var modal = document.getElementById('kmodal');
+  var frm = document.getElementById('frmKey');
+  var inName = document.getElementById('inKeyName');
+  var title = document.getElementById('kmodalTitle');
+  var btnDo = document.getElementById('btnKeyDo');
+  var secretWrap = document.getElementById('secretWrap');
+  var secretBox = document.getElementById('secretBox');
+  var msgSecret = document.getElementById('msgSecret');
+  var msgKeyErr = document.getElementById('msgKeyErr');
+  var msgKeys = document.getElementById('msgKeys');
+  function flash(el, text, isErr) { if (!el) return; el.className = 'msg ' + (isErr ? 'err' : 'ok'); el.innerHTML = text; if (el !== msgKeys) setTimeout(function () { el.className = 'msg'; el.innerHTML = ''; }, 6000); }
+  function openModal() { modal.hidden = false; frm.hidden = false; title.textContent = 'Buat Kunci API'; secretWrap.hidden = true; inName.value = ''; msgKeyErr.className = 'msg'; msgKeyErr.innerHTML = ''; inName.focus(); }
+  document.getElementById('btnNewKey').addEventListener('click', openModal);
+  var closes = modal.querySelectorAll('.kclose');
+  for (var i = 0; i < closes.length; i++) closes[i].addEventListener('click', function () { modal.hidden = true; });
+  document.getElementById('btnDone').addEventListener('click', function () { modal.hidden = true; location.reload(); });
+  modal.addEventListener('click', function (e) { if (e.target === modal) modal.hidden = true; });
+  frm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    btnDo.disabled = true;
+    fetch('/api/keys', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: inName.value.trim() }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j.ok) { flash(msgKeyErr, '<i class="fa-solid fa-circle-exclamation"></i>&nbsp;' + (j.error || 'Gagal membuat'), true); btnDo.disabled = false; return; }
+        frm.hidden = true; title.textContent = 'Kunci API dibuat';
+        secretBox.value = j.data.key;
+        secretWrap.hidden = false;
+      })
+      .catch(function () { flash(msgKeyErr, 'Terjadi kesalahan', true); btnDo.disabled = false; });
+  });
+  document.getElementById('btnCopy').addEventListener('click', function () {
+    secretBox.select();
+    try { document.execCommand('copy'); flash(msgSecret, 'Kunci disalin ke clipboard'); } catch (_) { flash(msgSecret, 'Salin manual: Ctrl/Cmd + C', true); }
+  });
+  var revBtns = document.querySelectorAll('[data-revoke]');
+  for (var j = 0; j < revBtns.length; j++) {
+    revBtns[j].addEventListener('click', function () {
+      var id = this.getAttribute('data-revoke');
+      if (!confirm('Cabut kunci ini? Akses API atas namanya langsung dicabut.')) return;
+      fetch('/api/keys/' + id, { method: 'DELETE' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j.ok) { flash(msgKeys, 'Gagal mencabut: ' + (j.error || ''), true); return; }
+          flash(msgKeys, '<i class="fa-solid fa-circle-check"></i>&nbsp;Kunci dicabut');
+          setTimeout(function () { location.reload(); }, 700);
+        })
+        .catch(function () { flash(msgKeys, 'Terjadi kesalahan', true); });
+    });
+  }
+})();
+</script>

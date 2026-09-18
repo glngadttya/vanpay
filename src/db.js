@@ -79,6 +79,18 @@ function migrate(db) {
     processed_at TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_wd_user ON withdrawals(user_id);
+  CREATE TABLE IF NOT EXISTS api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    key_prefix TEXT NOT NULL,
+    key_hash TEXT NOT NULL,
+    name TEXT,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT,
+    revoked_at TEXT
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
+  CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -247,7 +259,26 @@ function buildSqliteHandle(db) {
     },
   };
 
-  const groups = { users, sessions, payments, ledger, withdrawals, settings };
+  const apiKeys = {
+    create({ userId, keyPrefix, keyHash, name }) {
+      db.prepare(`INSERT INTO api_keys (user_id, key_prefix, key_hash, name, created_at) VALUES (?, ?, ?, ?, ?)`).run(userId, keyPrefix, keyHash, name || null, nowIso());
+      return db.prepare(`SELECT * FROM api_keys WHERE key_hash = ?`).get(keyHash);
+    },
+    getByHash(hash) {
+      const row = db.prepare(`SELECT * FROM api_keys WHERE key_hash = ?`).get(hash);
+      if (!row || row.revoked_at) return null;
+      db.prepare(`UPDATE api_keys SET last_used_at = ? WHERE id = ?`).run(nowIso(), row.id);
+      return row;
+    },
+    listByUser(userId) {
+      return db.prepare(`SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC`).all(userId);
+    },
+    revoke(id, userId) {
+      return db.prepare(`UPDATE api_keys SET revoked_at = ? WHERE id = ? AND user_id = ? AND revoked_at IS NULL`).run(nowIso(), id, userId).changes > 0;
+    },
+  };
+
+  const groups = { users, sessions, payments, ledger, withdrawals, settings, apiKeys };
   const handle = { db, close: () => { try { db.close(); } catch (_) {} } };
   for (const [g, methods] of Object.entries(groups)) {
     handle[g] = {};
