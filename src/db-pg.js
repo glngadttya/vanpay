@@ -75,6 +75,18 @@ async function migrate(c) {
     processed_at TEXT
   )`);
   await c.query(`CREATE INDEX IF NOT EXISTS idx_wd_user ON withdrawals(user_id)`);
+  await c.query(`CREATE TABLE IF NOT EXISTS api_keys (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    key_prefix TEXT NOT NULL,
+    key_hash TEXT NOT NULL,
+    name TEXT,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT,
+    revoked_at TEXT
+  )`);
+  await c.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);
+  await c.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)`);
   await c.query(`CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -288,6 +300,28 @@ function buildHandle() {
       listAll: async () => {
         const r = await pool.query(`SELECT * FROM settings`);
         return r.rows;
+      },
+    },
+
+    apiKeys: {
+      create: async ({ userId, keyPrefix, keyHash, name }) => {
+        const r = await pool.query(`INSERT INTO api_keys (user_id, key_prefix, key_hash, name, created_at) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+          [userId, keyPrefix, keyHash, name || null, nowIso()]);
+        return r.rows[0];
+      },
+      getByHash: async (hash) => {
+        const r = await pool.query(`SELECT * FROM api_keys WHERE key_hash = $1 AND revoked_at IS NULL`, [hash]);
+        if (!r.rows[0]) return null;
+        await pool.query(`UPDATE api_keys SET last_used_at = $2 WHERE id = $1`, [r.rows[0].id, nowIso()]);
+        return r.rows[0];
+      },
+      listByUser: async (userId) => {
+        const r = await pool.query(`SELECT * FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+        return r.rows;
+      },
+      revoke: async (id, userId) => {
+        const r = await pool.query(`UPDATE api_keys SET revoked_at = $3 WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL`, [id, userId, nowIso()]);
+        return r.rowCount > 0;
       },
     },
   };
