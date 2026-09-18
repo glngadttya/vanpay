@@ -6,6 +6,8 @@
 <body>
   <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'docs' }), foot: '' }) %>
 <%
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
   function jsonHtml(obj) {
     const txt = JSON.stringify(obj, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return txt.replace(/("(?:\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g, function (m, str, colon, bool) {
@@ -14,225 +16,99 @@
       return '<span class="c-n">' + m + '</span>';
     });
   }
+
+  function term(title) {
+    return '<div class="term"><div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">' + esc(title) + '</span></div>';
+  }
 %>
-  <main style="padding:12px 0 10px">
+  <main style="padding:12px 0 34px">
     <div class="wrap">
       <h2>Dokumentasi API</h2>
-      <p class="hint" style="font-size:15px;color:var(--muted)">REST API VanPay Gateway. Semua endpoint mengirim respons JSON. Base URL akses dibatasi per server — verifikasi nilai aktual melalui panel hosting Anda.</p>
-
-      <div class="card" style="margin-top:16px">
-        <div class="rowm"><span>Base URL (contoh)</span><b>https://payment.savantlabs.my.id</b></div>
-        <div class="rowm"><span>Format respons</span><b>{ "ok": true, "data": ... }</b></div>
-        <div class="rowm"><span>Format error</span><b>{ "ok": false, "error": "..." }</b></div>
-        <div class="rowm"><span>Status QRIS</span><b>PENDING · PAID · EXPIRED · REJECTED</b></div>
-        <div class="rowm"><span>Autentikasi</span><b><code>X-API-Key: &lt;kunci&gt;</code> atau <code>Authorization: Bearer &lt;kunci&gt;</code> atau cookie sesi <code>vanpay</code></b></div>
-      </div>
-
-      <div class="sep"><span>Autentikasi &amp; API Key</span></div>
-      <div class="card">
-        <p class="hint" style="margin:0 0 10px">Endpoint <b>pribadi</b> membutuhkan akses. Cara paling aman untuk integrasi web/bot: <b>API Key</b> yang dibuat per akun di <a href="/dashboard/developers" style="color:var(--acc);text-decoration:underline">Dashboard → Developer Tools</a>. Kunci dikirim lewat header berikut:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">autentikasi.sh</span></div>
-<pre><span class="c-com"># lewat header X-API-Key</span>
-<span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c11d2e3f4a5b6c7d8e9f10aa1bb2cc3dd4ee5ff6aa7bb8cc9dd0e1"</span> \
-  https://payment.savantlabs.my.id/api/bal
-
-<span class="c-com"># atau lewat Authorization: Bearer (hasil sama)</span>
-<span class="c-prompt">$</span> curl -H <span class="c-s">"Authorization: Bearer vk_ee172f0ba0c11d2e3f4a5b6c7d8e9f10aa1bb2cc3dd4ee5ff6aa7bb8cc9dd0e1"</span> \
-  https://payment.savantlabs.my.id/api/bal</pre>
-        </div>
-        <p class="hint" style="margin:10px 0">Buat kunci lewat dashboard <b>Developer Tools</b> atau via API (sesi login dibutuhkan):</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">buat-key.sh</span></div>
-<pre><span class="c-prompt">$</span> curl -X POST https://payment.savantlabs.my.id/api/keys \
-  -H <span class="c-s">"Cookie: vanpay=&lt;session&gt;"</span> \
-  -H <span class="c-s">"Content-Type: application/json"</span> \
-  -d <span class="c-s">'{"name": "bot telegram saya"}'</span>
-<span class="c-com"># respon sukses (HTTP 200) — kunci penuh hanya tampil SEKALI</span>
-<%- jsonHtml({ ok: true, data: { id: 3, name: 'bot telegram saya', key: 'vk_ee172f0ba0c11d2e3f4a5b6c7d8e9f10aa1bb2cc3dd4ee5ff6aa7bb8cc9dd0e1', prefix: 'vk_ee172', createdAt: '2026-09-18T03:00:00.000Z' } }) %></pre>
-        </div>
-        <p class="hint" style="margin:10px 0 0"><b>Catatan:</b> simpan kunci dengan aman (env var / secret manager). Kunci yang bocor dapat dicabut kapan saja dari Developer Tools.</p>
-      </div>
+      <p class="hint" style="font-size:15px;color:var(--muted);margin:0 0 2px">REST API VanPay Gateway. Setiap endpoint di bawah terdiri dari dua blok: perintah <b>curl</b> (nama berkas <code>.sh</code>) dan contoh <b>respons JSON</b> (nama berkas <code>.json</code>).</p>
+      <p class="hint" style="font-size:15px;color:var(--muted);margin:4px 0 0">Akses endpoint pribadi memakai <b>API Key</b> (dibuat &amp; dicabut lewat <b>Dashboard → Developer Tools</b>), dikirim via header <code>X-API-Key</code> atau <code>Authorization: Bearer</code>.</p>
 
       <div class="sep"><span>Umum</span></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge" style="background:#D6D0C0">GET</span></td><td><code>/health</code></td><td>Cek kondisi server (uptime) — publik</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">health.sh</span></div>
-<pre><span class="c-prompt">$</span> curl https://payment.savantlabs.my.id/health
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, name: 'vanpay', uptime: 482 }) %></pre>
-        </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">health.sh</span></div>
+<pre><span class="c-prompt">$</span> curl https://payment.savantlabs.my.id/health</pre>
+      </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">health.json</span></div>
+<pre><%- jsonHtml({ ok: true, name: 'vanpay', uptime: 482 }) %></pre>
       </div>
 
       <div class="sep"><span>Status pembayaran (publik — tanpa autentikasi)</span></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge" style="background:#D6D0C0">GET</span></td><td><code>/api/qris/:id/status</code></td><td>Status QRIS: PENDING, PAID, EXPIRED, atau REJECTED</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">status.sh</span></div>
-<pre><span class="c-prompt">$</span> curl https://payment.savantlabs.my.id/api/qris/PN-MU6B0C1Q2AA897/status
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: { status: 'PAID', paidAt: '2026-09-18T02:12:10.001Z' } }) %></pre>
-        </div>
-        <p class="hint" style="margin:10px 0 0">Saat QRIS masih menunggu pembayaran, <code>paidAt</code> bernilai <code>null</code>. Polling otomatis server tetap berjalan; endpoint ini juga memicu siklus polling.</p>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">status.sh</span></div>
+<pre><span class="c-prompt">$</span> curl https://payment.savantlabs.my.id/api/qris/PN-MU6B0C1Q2AA897/status</pre>
       </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">status.json</span></div>
+<pre><%- jsonHtml({ ok: true, data: { status: 'PAID', paidAt: '2026-09-18T02:12:10.001Z' } }) %></pre>
+      </div>
+      <p class="hint" style="margin:8px 0 0;font-size:14px;color:var(--muted)">Saat menunggu pembayaran, <code>paidAt</code> bernilai <code>null</code>. Polling otomatis server tetap berjalan; endpoint ini juga memicu siklus polling.</p>
 
       <div class="sep"><span>QRIS instan</span></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge" style="background:#FACC15;color:#141414">POST</span></td><td><code>/api/qris/create</code></td><td>Buat QRIS baru. Body: <code>{ amount, note? }</code></td></tr>
-              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/qris/:id/qr.png</code></td><td>Gambar QR PNG (binary)</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="hint" style="margin:6px 0 0">Contoh buat QRIS:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">create-qris.sh</span></div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">create-qris.sh</span></div>
 <pre><span class="c-prompt">$</span> curl -X POST https://payment.savantlabs.my.id/api/qris/create \
-  -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> \
+  -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c11d2e3f4a5b6c7d8e9f10aa1bb2cc3dd4ee5ff6aa7bb8cc9dd0e1"</span> \
   -H <span class="c-s">"Content-Type: application/json"</span> \
-  -d <span class="c-s">'{"amount": 10000, "note": "Order #123"}'</span>
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: { id: 'PN-MU6B0C1Q2AA897', amount: 10000, fee: 70, payAmount: 10071, uniqueCode: 1, status: 'PENDING', expiresAt: '2026-09-18T02:26:14.754Z', note: 'Order #123', qrUrl: '/api/qris/PN-MU6B0C1Q2AA897/qr.png', statusUrl: '/api/qris/PN-MU6B0C1Q2AA897/status' } }) %></pre>
-        </div>
-        <p class="hint" style="margin:10px 0 0">Unduh gambar QR:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">download-qr.sh</span></div>
-<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> \
-  -o qr.png https://payment.savantlabs.my.id/api/qris/PN-MU6B0C1Q2AA897/qr.png</pre>
-        </div>
+  -d <span class="c-s">'{"amount": 10000, "note": "Order #123"}'</span></pre>
+      </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">create-qris.json</span></div>
+<pre><%- jsonHtml({ ok: true, data: { id: 'PN-MU6B0C1Q2AA897', amount: 10000, fee: 70, payAmount: 10071, uniqueCode: 1, status: 'PENDING', expiresAt: '2026-09-18T02:26:14.754Z', note: 'Order #123', qrUrl: '/api/qris/PN-MU6B0C1Q2AA897/qr.png', statusUrl: '/api/qris/PN-MU6B0C1Q2AA897/status' } }) %></pre>
+      </div>
+      <p class="hint" style="margin:8px 0 0;font-size:14px;color:var(--muted)">Unduh gambar QR (PNG) — <code>PN-MU6B0C1Q2AA897</code> contoh ID transaksi:</p>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">download-qr.sh</span></div>
+<pre><span class="c-prompt">$</span> curl -o qr.png https://payment.savantlabs.my.id/api/qris/PN-MU6B0C1Q2AA897/qr.png \
+  -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c..."</span></pre>
       </div>
 
       <div class="sep"><span>Saldo &amp; transaksi</span></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/bal</code></td><td>Saldo aktif</td></tr>
-              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/payments</code></td><td>Riwayat QRIS pengguna (50 terakhir)</td></tr>
-              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/ledger</code></td><td>Mutasi saldo (100 terakhir)</td></tr>
-              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/withdraws</code></td><td>Riwayat penarikan pengguna</td></tr>
-              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/stats</code></td><td>Statistik real-time pengguna</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="hint" style="margin:6px 0 0">Cek saldo:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">cek-saldo.sh</span></div>
-<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> https://payment.savantlabs.my.id/api/bal
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: { balance: 1045000 } }) %></pre>
-        </div>
-        <p class="hint" style="margin:10px 0 0">Riwayat QRIS:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">riwayat-qris.sh</span></div>
-<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> https://payment.savantlabs.my.id/api/payments
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: [ { id: 'PN-MU6B0C1Q2AA897', amount: 10000, fee: 70, payAmount: 10071, uniqueCode: 1, status: 'PAID', note: 'Order #123', createdAt: '2026-09-18T02:11:14.754Z', paidAt: '2026-09-18T02:12:10.001Z', expiresAt: '2026-09-18T02:26:14.754Z' } ] }) %></pre>
-        </div>
-        <p class="hint" style="margin:10px 0 0">Mutasi saldo:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">mutasi.sh</span></div>
-<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> https://payment.savantlabs.my.id/api/ledger
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: [ { id: 12, type: 'deposit', amount: 10000, ref: 'PN-MU6B0C1Q2AA897', note: null, createdAt: '2026-09-18T02:12:10.002Z' } ] }) %></pre>
-        </div>
-        <p class="hint" style="margin:10px 0 0">Statistik &amp; ringkasan:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">stats.sh</span></div>
-<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> https://payment.savantlabs.my.id/api/stats
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: { balance: 100000, totalDeposit: 150000, totalFee: 1050, totalPaidAmount: 151101, totalWithdraw: 50000, pendingWithdraw: 0, countPaid: 3, countAll: 4, pendingPayments: 1, daily: [ { d: '2026-09-17', count: 2, amount: 100000 }, { d: '2026-09-18', count: 1, amount: 50000 } ] } }) %></pre>
-        </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">cek-saldo.sh</span></div>
+<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> https://payment.savantlabs.my.id/api/bal</pre>
+      </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">cek-saldo.json</span></div>
+<pre><%- jsonHtml({ ok: true, data: { balance: 1045000 } }) %></pre>
+      </div>
+
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">riwayat-qris.sh</span></div>
+<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> https://payment.savantlabs.my.id/api/payments</pre>
+      </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">riwayat-qris.json</span></div>
+<pre><%- jsonHtml({ ok: true, data: [ { id: 'PN-MU6B0C1Q2AA897', amount: 10000, fee: 70, payAmount: 10071, uniqueCode: 1, status: 'PAID', note: 'Order #123', createdAt: '2026-09-18T02:11:14.754Z', statusUrl: '/api/qris/PN-MU6B0C1Q2AA897/status' } ] }) %></pre>
+      </div>
+
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">mutasi.sh</span></div>
+<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> https://payment.savantlabs.my.id/api/ledger</pre>
+      </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">mutasi.json</span></div>
+<pre><%- jsonHtml({ ok: true, data: { items: [ { id: 31, type: 'deposit', amount: 10000, createdAt: '2026-09-18T02:12:10.001Z', ref: 'PN-MU6B0C1Q2AA897' } ], total: 100000 } }) %></pre>
       </div>
 
       <div class="sep"><span>Penarikan dana</span></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge" style="background:#FACC15;color:#141414">POST</span></td><td><code>/api/withdraw</code></td><td>Ajukan penarikan. Body: <code>{ amount, method, accountNumber, accountName }</code></td></tr>
-              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/withdraws</code></td><td>Riwayat penarikan pengguna</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">tarik-dana.sh</span></div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">tarik-dana.sh</span></div>
 <pre><span class="c-prompt">$</span> curl -X POST https://payment.savantlabs.my.id/api/withdraw \
   -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> \
   -H <span class="c-s">"Content-Type: application/json"</span> \
-  -d <span class="c-s">'{"amount": 5000, "method": "DANA", "accountNumber": "081234567890", "accountName": "Ari"}'</span>
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: { id: 'WD-MU6B0D3K2F9A88', amount: 5000, method: 'DANA', accountNumber: '081234567890', accountName: 'Ari', status: 'PENDING', adminNote: null, requestedAt: '2026-09-18T03:00:00.000Z', processedAt: null } }) %></pre>
-        </div>
-        <p class="hint" style="margin:10px 0 0">Metode penarikan yang tersedia: <b>DANA</b>, <b>GOPAY</b>, <b>SHOPEEPAY</b>. Penarikan diproses admin maksimal 1–24 jam.</p>
+  -d <span class="c-s">'{"amount": 5000, "method": "DANA", "accountNumber": "081234567890", "accountName": "Ari"}'</span></pre>
+      </div>
+      <div class="term">
+        <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">tarik-dana.json</span></div>
+<pre><%- jsonHtml({ ok: true, data: { id: 'WD-MU6B0D3K2F9A88', amount: 5000, method: 'DANA', accountNumber: '081234567890', accountName: 'Ari', status: 'PENDING', requestedAt: '2026-09-18T03:00:00.000Z' } }) %></pre>
       </div>
 
-      <div class="sep"><span>Developer Tools (API Key)</span></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/keys</code></td><td>Daftar kunci API akun Anda</td></tr>
-              <tr><td><span class="badge" style="background:#FACC15;color:#141414">POST</span></td><td><code>/api/keys</code></td><td>Buat kunci API baru. Body: <code>{ name? }</code></td></tr>
-              <tr><td><span class="badge" style="background:#FFA94D">DELETE</span></td><td><code>/api/keys/:id</code></td><td>Cabut (hapus) kunci API</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="hint" style="margin:6px 0 0">Daftar kunci:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">list-key.sh</span></div>
-<pre><span class="c-prompt">$</span> curl -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> https://payment.savantlabs.my.id/api/keys
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: [ { id: 3, name: 'bot telegram saya', prefix: 'vk_ee172', createdAt: '2026-09-18T03:00:00.000Z', lastUsedAt: '2026-09-18T04:12:33.000Z', revoked: false } ] }) %></pre>
-        </div>
-        <p class="hint" style="margin:10px 0 0">Cabut kunci:</p>
-        <div class="term">
-          <div class="term-top"><i class="r"></i><i class="y"></i><i class="g"></i><span class="t-title">revoke-key.sh</span></div>
-<pre><span class="c-prompt">$</span> curl -X DELETE -H <span class="c-s">"X-API-Key: vk_ee172f0ba0c1..."</span> \
-  https://payment.savantlabs.my.id/api/keys/3
-<span class="c-com"># respon sukses (HTTP 200)</span>
-<%- jsonHtml({ ok: true, data: { revoked: true } }) %></pre>
-        </div>
-      </div>
-
-      <div class="sep"><span>Operasional</span></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge" style="background:#D6D0C0">GET/POST</span></td><td><code>/api/cron/poll?secret=&lt;secret&gt;</code></td><td>Paksa siklus polling pembayaran (untuk cron/job scheduler)</td></tr>
-              <tr><td><span class="badge" style="background:#D6D0C0">GET</span></td><td><code>/auth/me</code></td><td>Info akun pengguna yang terautentikasi (kunci/sesi)</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="hint" style="margin:6px 0 0">Polling pembayaran juga berjalan otomatis di dalam server. Endpoint cron tersedia untuk mempercepat deteksi jika dibutuhkan.</p>
-      </div>
-
-      <div class="card" style="margin:20px 0 8px">
-        <p class="hint" style="margin:0"><b>Skema pembayaran QRIS:</b> total dibayar pembeli = nominal + fee (persentase standar) + kode unik 1–99. Saldo yang dikreditkan ke akun Anda adalah nominal penuh.</p>
-      </div>
+      <p class="hint" style="margin:14px 0 0;font-size:14px;color:var(--muted)">Skema QRIS: total dibayar pembeli = <code>nominal + fee + kode unik 1–99</code>. Saldo yang dikreditkan ke akun Anda adalah nominal penuh.</p>
     </div>
   </main>
 

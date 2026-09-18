@@ -85,6 +85,18 @@ function buildApp(db) {
     next();
   }
 
+  // hanya sesi browser (cookie) — untuk aksi sensitif seperti mengelola API key,
+  // supaya kunci API lain tidak bisa dipakai untuk membuat/mencabut kunci.
+  async function requireSession(req, res, next) {
+    const sToken = req.cookies.vanpay;
+    if (!sToken) return res.status(401).json({ ok: false, error: 'Sesi tidak ada — masuk dulu dari browser' });
+    const s = await db.sessions.get(sToken);
+    if (!s) return res.status(401).json({ ok: false, error: 'Sesi tidak valid — masuk ulang' });
+    req.user = s.user;
+    if (req.user.status !== 'active') return res.status(403).json({ ok: false, error: 'Akun nonaktif' });
+    next();
+  }
+
   async function requireOwner(req, res, next) {
     await loadUser(req);
     if (!req.user) return res.status(401).json({ ok: false, error: 'Belum login' });
@@ -100,7 +112,7 @@ function buildApp(db) {
   const rlWd = makeRl((req) => (req.user ? 'w' + req.user.id : clientIp(req)), { windowMs: 60000, max: 8 });
   const rlBootstrap = makeRl(() => 'bootstrap', { windowMs: 60000, max: 10 });
   const rlOtp = makeRl((req) => (req.user ? 'g' + req.user.id : clientIp(req)), { windowMs: 60000, max: 6 });
-  const rlKey = makeRl((req) => (req.user ? 'k' + req.user.id : clientIp(req)), { windowMs: 60000, max: 10 });
+  const rlKey = makeRl((req) => (req.user ? 'k' + req.user.id : clientIp(req)), { windowMs: 60000, max: 12 });
 
   const ok = (res, data) => res.json({ ok: true, data });
   const withAsync = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -333,7 +345,7 @@ function buildApp(db) {
     })));
   }));
 
-  app.post('/api/keys', requireAuth, rlKey, withAsync(async (req, res) => {
+  app.post('/api/keys', requireSession, rlKey, withAsync(async (req, res) => {
     const name = String(req.body.name || '').trim().slice(0, 60);
     const raw = 'vk_' + crypto.randomBytes(16).toString('hex');
     const row = await db.apiKeys.create({
@@ -346,7 +358,7 @@ function buildApp(db) {
     ok(res, { id: row.id, name: row.name, key: raw, prefix: row.key_prefix, createdAt: row.created_at });
   }));
 
-  app.delete('/api/keys/:id', requireAuth, withAsync(async (req, res) => {
+  app.delete('/api/keys/:id', requireSession, withAsync(async (req, res) => {
     const id = Number(req.params.id);
     const done = await db.apiKeys.revoke(id, req.user.id);
     if (!done) return res.status(404).json({ ok: false, error: 'Key tidak ditemukan' });
