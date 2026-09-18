@@ -4,6 +4,7 @@
   <%- include('partials/head', { title: 'Cara Kerja — VanPay Gateway' }) %>
 </head>
 <body>
+  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'cara' }), foot: '' }) %>
   <section class="how">
     <div class="wrap">
       <h2>Cara kerja</h2>
@@ -44,7 +45,6 @@
     </div>
   </div>
 
-  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'cara' }), foot: '' }) %>
   <%- include('partials/footer') %>
 </body>
 </html>

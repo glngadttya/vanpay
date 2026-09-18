@@ -4,7 +4,8 @@
   <%- include('partials/head', { title: 'Dokumentasi API — VanPay Gateway' }) %>
 </head>
 <body>
-  <main style="padding:96px 0 10px">
+  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'docs' }), foot: '' }) %>
+  <main style="padding:12px 0 10px">
     <div class="wrap">
       <h2>Dokumentasi API</h2>
       <p class="hint" style="font-size:15px;color:var(--muted)">REST API VanPay Gateway. Base URL akses dibatasi per server — verifikasi nilai aktual melalui panel hosting Anda.</p>
@@ -100,7 +101,6 @@
     </div>
   </main>
 
-  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'docs' }), foot: '' }) %>
   <%- include('partials/footer') %>
 </body>
 </html>

@@ -5,6 +5,7 @@
   <meta name="description" content="Payment gateway QRIS. Buat QRIS secara langsung, saldo masuk otomatis, penarikan via DANA/GoPay/ShopeePay.">
 </head>
 <body>
+  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'index' }), foot: '' }) %>
   <section class="hero">
     <div class="wrap">
       <h1>Terima pembayaran melalui <em>QRIS</em> langsung ke saldo bisnis Anda.</h1>
@@ -57,7 +58,6 @@
     </div>
   </div>
 
-  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'index' }), foot: '' }) %>
   <%- include('partials/footer') %>
 </body>
 </html>

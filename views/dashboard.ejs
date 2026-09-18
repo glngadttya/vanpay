@@ -4,6 +4,7 @@
   <%- include('partials/head', { title: 'Dashboard — VanPay Gateway' }) %>
 </head>
 <body>
+  <%- include('partials/menu', { body: include('partials/sidebar'), foot: '<a class="drawer-link" href="/cara-kerja"><i class="fa-solid fa-circle-info"></i><span>Cara Kerja</span></a><a class="drawer-link" href="/docs"><i class="fa-solid fa-book"></i><span>Dokumentasi API</span></a><a class="drawer-link danger" href="/logout"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></a>' }) %>
   <div class="dash">
     <main>
       <% if (msg) { %>

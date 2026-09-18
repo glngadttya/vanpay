@@ -1,5 +1,9 @@
 <div class="prof">
-  <img src="<%= me.avatar || '/logo.svg' %>" width="40" height="40" alt="">
+  <% if (me.avatar) { %>
+    <img src="<%= esc(me.avatar) %>" width="40" height="40" alt="">
+  <% } else { %>
+    <span class="ava"><i class="fa-solid fa-user"></i></span>
+  <% } %>
   <div>
     <b><%= esc(me.name || me.email) %></b>
     <span><%= esc(me.email) %></span>

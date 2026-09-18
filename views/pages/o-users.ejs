@@ -6,7 +6,7 @@
       <tbody>
         <% list.forEach((u) => { %>
           <tr>
-            <td style="display:flex;gap:8px;align-items:center"><img src="<%= esc(u.avatar || '/logo.svg') %>" width="24" height="24" style="border-radius:50%"> <b><%= esc(u.name || u.email) %></b>&nbsp;<%- u.role === 'owner' ? badge('owner') : '' %></td>
+            <td style="display:flex;gap:8px;align-items:center"><% if (u.avatar) { %><img src="<%= esc(u.avatar) %>" width="24" height="24" style="border-radius:50%"><% } else { %><b class="ava" style="width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;background:var(--line);font-size:10px"><i class="fa-solid fa-user"></i></b><% } %> <b><%= esc(u.name || u.email) %></b>&nbsp;<%- u.role === 'owner' ? badge('owner') : '' %></td>
             <td><%= esc(u.email) %></td>
             <td><b><%= rupiah(u.balance) %></b></td>
             <td><%= rupiah(u.totalDeposit) %></td>

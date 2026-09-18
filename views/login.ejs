@@ -4,6 +4,7 @@
   <%- include('partials/head', { title: 'Masuk — VanPay Gateway' }) %>
 </head>
 <body>
+  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'login' }), foot: '' }) %>
   <div class="auth-wrap">
     <div class="auth-card">
       <h1>Masuk ke VanPay</h1>
@@ -27,7 +28,6 @@
     </div>
   </div>
 
-  <%- include('partials/menu', { body: include('partials/pubnav', { navNow: 'login' }), foot: '' }) %>
   <%- include('partials/footer') %>
 </body>
 </html>
