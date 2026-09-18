@@ -5,4 +5,5 @@ data/
 .env
 .DS_Store
 npm-debug.log*
-.vercel/
+.vercel/batch.sftp
+*.sftp
