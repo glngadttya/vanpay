@@ -1,32 +1,44 @@
-<h2>Semua pembayaran</h2>
-<div class="inline" style="margin-bottom:14px">
-  <a class="btn ghost <%= !filter ? 'primary' : '' %>" style="padding:6px 12px;font-size:12px" href="/dashboard/o-payments">Semua</a>
-  <% ['PENDING', 'PAID', 'EXPIRED'].forEach((s) => { %>
-    <a class="btn ghost <%= filter === s ? 'primary' : '' %>" style="padding:6px 12px;font-size:12px" href="/dashboard/o-payments?status=<%= s %>"><%= s %></a>
-  <% }) %>
-</div>
-<div class="card">
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>ID</th><th>User</th><th>Nominal</th><th>Fee</th><th>Total QR</th><th>Status</th><th>Dibuat</th><th>Dibayar</th></tr></thead>
-      <tbody>
-        <% if (list.length) { %>
-          <% list.forEach((p) => { %>
-            <tr>
-              <td><b><%= esc(p.id) %></b></td>
-              <td>#<%= p.user_id %></td>
-              <td><%= rupiah(p.amount) %></td>
-              <td><%= rupiah(p.fee) %></td>
-              <td><%= rupiah(p.pay_amount) %> (+<%= p.unique_code %>)</td>
-              <td><%- badge(p.status) %></td>
-              <td><%= fmt(p.created_at) %></td>
-              <td><%= fmt(p.paid_at) %></td>
-            </tr>
-          <% }) %>
-        <% } else { %>
-          <tr><td colspan="8" class="empty">Belum ada pembayaran</td></tr>
-        <% } %>
-      </tbody>
-    </table>
+<div class="o-dash">
+  <div class="o-bar">
+    <div>
+      <div class="bread"><a href="/dashboard/o-overview">Owner</a> / Pembayaran</div>
+      <h2>Semua pembayaran</h2>
+      <div class="sub">Riwayat transaksi QRIS masuk, status terbaru paling atas.</div>
+    </div>
+  </div>
+
+  <div class="o-toolbar">
+    <div class="o-chips">
+      <a class="o-chip <%= !filter ? 'on' : '' %>" href="/dashboard/o-payments"><i class="fa-solid fa-list"></i>Semua</a>
+      <% ['PENDING', 'PAID', 'EXPIRED'].forEach((s) => { %>
+        <a class="o-chip <%= filter === s ? 'on' : '' %>" href="/dashboard/o-payments?status=<%= s %>"><i class="fa-solid fa-<%= s === 'PENDING' ? 'hourglass-half' : s === 'PAID' ? 'circle-check' : 'clock' %>"></i><%= s %></a>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="o-card" style="padding:0">
+    <div class="o-card-b" style="padding:0;overflow-x:auto">
+      <table class="o-tbl">
+        <thead><tr><th>ID</th><th>User</th><th>Nominal</th><th>Fee</th><th>Total QR</th><th>Status</th><th>Dibuat</th><th>Dibayar</th></tr></thead>
+        <tbody>
+          <% if (list.length) { %>
+            <% list.forEach((p) => { %>
+              <tr>
+                <td><b><%= esc(p.id) %></b></td>
+                <td>#<%= p.user_id %></td>
+                <td class="amt"><%= rupiah(p.amount) %></td>
+                <td class="amt"><%= rupiah(p.fee) %></td>
+                <td class="amt"><%= rupiah(p.pay_amount) %> <span class="o-hint">(+<%= p.unique_code %>)</span></td>
+                <td><%- badge(p.status) %></td>
+                <td><%= fmt(p.created_at) %></td>
+                <td><%= p.paid_at ? fmt(p.paid_at) : '<span class="o-hint">—</span>' %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="8" class="o-empty">Belum ada pembayaran.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
