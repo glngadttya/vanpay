@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <%- include('partials/head', { title: 'Dokumentasi API — VanPay Gateway' }) %>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/logo.svg" alt="VanPay"><b>VanPay</b></a>
+      <nav class="spacer"></nav>
+      <a class="btn ghost" href="/"><i class="fa-solid fa-house"></i>&nbsp;Beranda</a>
+    </div>
+  </header>
+
+  <main style="padding:26px 0 10px">
+    <div class="wrap">
+      <h2>Dokumentasi API</h2>
+      <p class="hint" style="font-size:15px;color:var(--muted)">REST API VanPay Gateway. Base URL akses dibatasi per server — verifikasi nilai aktual melalui panel hosting Anda.</p>
+
+      <div class="card" style="margin-top:16px">
+        <div class="rowm"><span>Base URL (contoh)</span><b>https://payment.savantlabs.my.id</b></div>
+        <div class="rowm"><span>Format respons</span><b>{ "ok": true, "data": ... }</b></div>
+        <div class="rowm"><span>Format error</span><b>{ "ok": false, "error": "..." }</b></div>
+        <div class="rowm"><span>Status QRIS</span><b>PENDING · PAID · EXPIRED · REJECTED</b></div>
+      </div>
+
+      <div class="sep"><span>Umum</span></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge" style="background:#D6D0C0">GET</span></td><td><code>/health</code></td><td>Cek kondisi server (uptime)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sep"><span>Status pembayaran (publik — tanpa login)</span></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge" style="background:#D6D0C0">GET</span></td><td><code>/api/qris/:id/status</code></td><td>Status QRIS: PENDING, PAID, EXPIRED, atau REJECTED</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">Contoh:</p>
+<pre style="background:#141414;color:#f8f8f2;padding:14px;border:2px solid #141414;box-shadow:3px 3px 0 #141414;overflow-x:auto;font-size:12.5px;line-height:1.7">curl https://payment.savantlabs.my.id/api/qris/PN-XXXX/status
+→ { "ok": true, "data": { "status": "PAID", "paidAt": "2026-09-17T..." } }</pre>
+      </div>
+
+      <div class="sep"><span>User (sesi login dashboard)</span></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge" style="background:#FACC15;color:#141414">POST</span></td><td><code>/api/qris/create</code></td><td>Buat QRIS baru. Body: <code>{ amount, note? }</code></td></tr>
+              <tr><td><span class="badge" style="background:#FACC15;color:#141414">POST</span></td><td><code>/api/withdraw</code></td><td>Ajukan penarikan. Body: <code>{ amount, method, accountNumber, accountName }</code></td></tr>
+              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/bal</code></td><td>Saldo aktif</td></tr>
+              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/payments</code></td><td>Riwayat QRIS pengguna (50 terakhir)</td></tr>
+              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/ledger</code></td><td>Mutasi saldo (100 terakhir)</td></tr>
+              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/withdraws</code></td><td>Riwayat penarikan pengguna</td></tr>
+              <tr><td><span class="badge" style="background:#4ECDC4">GET</span></td><td><code>/api/stats</code></td><td>Statistik real-time pengguna</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">Otorisasi: seluruh endpoint di atas memerlukan cookie sesi dari login Google/GitHub. Autentikasi API programatik (token) belum tersedia.</p>
+      </div>
+
+      <div class="sep"><span>Owner / admin (role owner)</span></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge" style="background:#6366F1;color:#fff">GET</span></td><td><code>/api/admin/stats</code></td><td>Statistik platform</td></tr>
+              <tr><td><span class="badge" style="background:#6366F1;color:#fff">GET</span></td><td><code>/api/admin/status</code></td><td>Status GoBiz, QRIS, dan jumlah owner</td></tr>
+              <tr><td><span class="badge" style="background:#6366F1;color:#fff">GET</span></td><td><code>/api/admin/settings</code></td><td>Membaca seluruh pengaturan</td></tr>
+              <tr><td><span class="badge" style="background:#FFA94D">POST</span></td><td><code>/api/admin/settings</code></td><td>Simpan pengaturan. Body: <code>{ entries: {...} }</code></td></tr>
+              <tr><td><span class="badge" style="background:#FFA94D">POST</span></td><td><code>/api/admin/gobiz/otp · /verify · /password · /refresh · /logout</code></td><td>Manajemen koneksi GoBiz (OTP / email-password)</td></tr>
+              <tr><td><span class="badge" style="background:#FFA94D">POST</span></td><td><code>/api/admin/telegram/test</code></td><td>Kirim pesan uji Telegram</td></tr>
+              <tr><td><span class="badge" style="background:#6366F1;color:#fff">GET</span></td><td><code>/api/admin/users · /payments · /withdrawals</code></td><td>Daftar pengguna, pembayaran, penarikan</td></tr>
+              <tr><td><span class="badge" style="background:#FFA94D">POST</span></td><td><code>/api/admin/withdrawals/:id/approve · /:id/reject</code></td><td>Setujui / tolak penarikan</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sep"><span>Operasional</span></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Metode</th><th>Endpoint</th><th>Deskripsi</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge" style="background:#D6D0C0">GET/POST</span></td><td><code>/api/cron/poll?secret=&lt;secret&gt;</code></td><td>Paksa siklus polling pembayaran (untuk cron/job scheduler)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">Polling pembayaran juga berjalan otomatis di dalam server. Endpoint cron tersedia untuk mempercepat deteksi jika dibutuhkan.</p>
+      </div>
+
+      <div class="card" style="margin:20px 0 8px">
+        <p class="hint" style="margin:0"><b>Skema pembayaran QRIS:</b> total dibayar pembeli = nominal + fee (persentase standar) + kode unik 1–99. Saldo yang dikreditkan ke akun Anda adalah nominal penuh.</p>
+      </div>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

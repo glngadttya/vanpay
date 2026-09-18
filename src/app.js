@@ -215,6 +215,8 @@ function buildApp(db) {
 
   app.use(express.static(PUBLIC_DIR, { index: false }));
   app.get('/', (_req, res) => res.render('index', { title: 'VanPay Gateway — Terima Pembayaran QRIS secara Instan' }));
+  app.get('/cara-kerja', (_req, res) => res.render('cara', { title: 'Cara Kerja — VanPay Gateway' }));
+  app.get('/docs', (_req, res) => res.render('docs', { title: 'Dokumentasi API — VanPay Gateway' }));
   app.get('/login', (req, res) => res.render('login', { title: 'Masuk — VanPay Gateway', esc: vh.esc, loginErr: String(req.query.err || '') }));
   app.get('/dashboard', guard, withAsync((req, res) => renderDash(req, res, '')));
   app.get('/dashboard/:page', guard, withAsync((req, res) => renderDash(req, res, req.params.page)));

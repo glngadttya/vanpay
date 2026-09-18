@@ -2,32 +2,17 @@
 <html lang="id">
 <head>
   <%- include('partials/head', { title: 'VanPay Gateway — Terima Pembayaran QRIS secara Instan' }) %>
-  <meta name="description" content="Payment gateway QRIS. Login web, buat QRIS secara langsung, saldo masuk otomatis, penarikan via DANA/GoPay/ShopeePay.">
+  <meta name="description" content="Payment gateway QRIS. Buat QRIS secara langsung, saldo masuk otomatis, penarikan via DANA/GoPay/ShopeePay.">
 </head>
 <body>
-  <header class="nav">
-    <div class="wrap">
-      <a class="brand" href="/"><img src="/logo.svg" alt="VanPay"><b>VanPay</b></a>
-      <nav class="spacer"></nav>
-      <a class="lnk" href="/#features"><i class="fa-solid fa-layer-group"></i>&nbsp;Fitur</a>
-      <a class="lnk" href="/#cara"><i class="fa-solid fa-diagram-project"></i>&nbsp;Cara kerja</a>
-      <a class="lnk" href="/#biaya"><i class="fa-solid fa-receipt"></i>&nbsp;Biaya</a>
-      <a class="btn ghost" href="/login"><i class="fa-solid fa-right-to-bracket"></i>&nbsp;Masuk</a>
-    </div>
-  </header>
-
   <section class="hero">
     <div class="wrap">
       <h1>Terima pembayaran melalui <em>QRIS</em> langsung ke saldo bisnis Anda.</h1>
       <p class="sub">VanPay Gateway mengubah pelaku usaha dan developer menjadi payment gateway mandiri. Buat QRIS dengan nominal berapa pun dari dashboard, saldo masuk secara otomatis, dan tarik dana kapan saja.</p>
       <div class="cta">
         <a class="btn grad" href="/login"><i class="fa-solid fa-qrcode"></i>&nbsp;Buat QRIS pertama</a>
-        <a class="btn ghost" href="/#cara">Lihat cara kerja</a>
-      </div>
-      <div class="proof">
-        <div><b>Otomatis</b><span>Saldo bertambah setiap QRIS dibayar</span></div>
-        <div><b>Instan</b><span>QRIS langsung tersedia</span></div>
-        <div><b>24 jam</b><span>Penarikan manual (maksimal 1–24 jam)</span></div>
+        <a class="btn ghost" href="/cara-kerja">Lihat cara kerja</a>
+        <a class="btn ghost" href="/docs"><i class="fa-solid fa-book"></i>&nbsp;Dokumentasi API</a>
       </div>
     </div>
   </section>
@@ -60,31 +45,6 @@
           <div class="ic"><i class="fa-solid fa-bell"></i></div><h3>Notifikasi Telegram</h3>
           <p>Setiap deposit masuk atau penarikan baru, pemilik langsung menerima pemberitahuan melalui bot Telegram.</p>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="how" id="cara">
-    <div class="wrap">
-      <h2>Cara kerja</h2>
-      <div class="steps">
-        <div class="step"><b>Login</b><span>Masuk menggunakan Google atau GitHub.</span></div>
-        <div class="step"><b>Buat QRIS</b><span>Isi nominal, sistem menghasilkan QRIS (dengan fee standar ditambahkan).</span></div>
-        <div class="step"><b>Pembayaran</b><span>Pembeli melakukan scan dan membayar melalui aplikasi QRIS apa saja.</span></div>
-        <div class="step"><b>Saldo masuk</b><span>Saldo dikreditkan secara otomatis dan Anda menerima notifikasi.</span></div>
-        <div class="step"><b>Tarik dana</b><span>Penarikan ke DANA/GoPay/ShopeePay diproses admin maksimal dalam 24 jam.</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="fees" id="biaya">
-    <div class="wrap">
-      <h2>Biaya transparan</h2>
-      <div class="card">
-        <div class="fee-row"><span>Fee QRIS (dibayar pembeli)</span><b>fee standar nasional</b></div>
-        <div class="fee-row"><span>Biaya pembuatan QRIS</span><b>Rp 0</b></div>
-        <div class="fee-row"><span>Minimum penarikan</span><b>Rp 5.000</b></div>
-        <div class="fee-row"><span>Lama proses penarikan</span><b>1 – 24 jam (manual)</b></div>
       </div>
     </div>
   </section>

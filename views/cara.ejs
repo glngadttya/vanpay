@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <%- include('partials/head', { title: 'Cara Kerja — VanPay Gateway' }) %>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/logo.svg" alt="VanPay"><b>VanPay</b></a>
+      <nav class="spacer"></nav>
+      <a class="btn ghost" href="/"><i class="fa-solid fa-house"></i>&nbsp;Beranda</a>
+    </div>
+  </header>
+
+  <section class="how">
+    <div class="wrap">
+      <h2>Cara kerja</h2>
+      <div class="grid3">
+        <div class="card">
+          <div class="ic"><i class="fa-solid fa-user-lock"></i></div><h3>1. Login</h3>
+          <p>Masuk menggunakan Google atau GitHub — akun baru dibuat otomatis tanpa registrasi manual.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><i class="fa-solid fa-qrcode"></i></div><h3>2. Buat QRIS</h3>
+          <p>Isi nominal, sistem menghasilkan QRIS instan (dengan fee standar ditambahkan otomatis).</p>
+        </div>
+        <div class="card">
+          <div class="ic"><i class="fa-solid fa-camera"></i></div><h3>3. Pembayaran</h3>
+          <p>Pembeli melakukan scan dan membayar melalui aplikasi QRIS apa pun (DANA, GoPay, ShopeePay, dsb.).</p>
+        </div>
+        <div class="card">
+          <div class="ic"><i class="fa-solid fa-wallet"></i></div><h3>4. Saldo masuk</h3>
+          <p>Saldo dikreditkan secara otomatis begitu pembayaran terdeteksi, dan Anda menerima notifikasi.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><i class="fa-solid fa-right-from-bracket"></i></div><h3>5. Tarik dana</h3>
+          <p>Penarikan ke DANA, GoPay, atau ShopeePay diproses admin maksimal dalam 1–24 jam.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><i class="fa-solid fa-bell"></i></div><h3>6. Notifikasi</h3>
+          <p>Pemilik menerima pemberitahuan melalui Telegram untuk setiap deposit masuk atau penarikan baru.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="cta2">
+      <h2>Mulai sekarang</h2>
+      <p>QRIS pertama Anda tersedia kurang dari satu menit.</p>
+      <a class="btn" href="/login"><i class="fa-solid fa-right-to-bracket"></i>&nbsp;Masuk ke VanPay</a>
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>
+</body>
+</html>
